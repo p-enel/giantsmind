@@ -1,12 +1,19 @@
 import os
 import re
 import xml.etree.ElementTree as ET
+from copy import deepcopy
 from datetime import datetime
-from typing import Tuple
+from pathlib import Path
+from typing import List, Sequence, Tuple
 
 import fitz
+import pandas as pd
 import PyPDF2
 import requests
+
+from giantsmind.utils import local
+from giantsmind.database.schema import Session
+from giantsmind.database.operations import add_paper
 
 
 def extract_metadata_from_pdf(pdf_path: str, verbose: bool = False) -> dict:
@@ -114,7 +121,7 @@ def fetch_metadata_from_doi(doi: str, verbose: bool = False) -> dict:
 
     date_parts = data.get("published", {}).get("date-parts", [None])[0]
     if not date_parts or len(date_parts) != 3:
-        date_parts = data.get("published-online", {}).get("date-parts", [None])[0]
+        date_parts = data.get("published-online", {}).get("date-parts", [date_parts])[0]
     if not date_parts and journal == "bioRxiv":
         date_parts = data.get("posted", {}).get("date-parts", [None])[0]
     if date_parts is None and verbose:
@@ -132,7 +139,7 @@ def fetch_metadata_from_doi(doi: str, verbose: bool = False) -> dict:
         "url": url,
         "journal": journal,
         "publication_date": publication_date,
-        "ID": f"doi:{doi}",
+        "id": f"doi:{doi}",
     }
 
     if verbose:
@@ -178,7 +185,7 @@ def fetch_metadata_from_arxiv(arxiv_id: str, verbose: bool = False) -> dict:
         "url": url,
         "journal": journal,
         "publication_date": publication_date,
-        "ID": f"arXiv:{arxiv_id}",
+        "id": f"arXiv:{arxiv_id}",
     }
 
     if verbose:
@@ -346,7 +353,7 @@ def ask_to_edit_metadata_pdf(pdf_path: str, metadata: dict):
     if not (choice.lower() == "y" or not choice):
         return
 
-    subject = f"{metadata['journal']} ({metadata['publication_date']}) ID: {metadata['ID']}"
+    subject = f"{metadata['journal']} ({metadata['publication_date']}) ID: {metadata['id']}"
     metadata_for_df = {
         "/Title": metadata["title"],
         "/Author": metadata["author"],
@@ -354,3 +361,37 @@ def ask_to_edit_metadata_pdf(pdf_path: str, metadata: dict):
     }
     edit_pdf_metadata(pdf_path, pdf_path, metadata_for_df)
     print(f"Metadata for {pdf_path} has been updated.")
+
+
+def fetch_and_process_metadata(files: Sequence[str], verbose: bool) -> List[dict]:
+    metadatas = [get_metadata(file, verbose=verbose) for file in files]
+    return [deal_with_missing_fields(metadata, pdf_path) for metadata, pdf_path in zip(metadatas, files)]
+
+
+def add_file_path_to_metadata(metadatas: List[dict], pdf_paths: List[str]) -> List[dict]:
+    metadatas = deepcopy(metadatas)
+    new_metadatas = []
+    for metadata, file_path in zip(metadatas, pdf_paths):
+        metadata["file_path"] = file_path
+        new_metadatas.append(metadata)
+    return new_metadatas
+
+
+def update_metadata_df(metadatas: List[dict]) -> None:
+    """Update the metadata dataframe with new metadata."""
+    session = Session()
+    for metadata in metadatas:
+        add_paper(session, metadata)
+
+
+def process_metadata(files: Sequence[str], hashes: Sequence[str], verbose: bool = True) -> List[dict]:
+    """Get and save metadata for a list of files."""
+    if len(files) != len(hashes):
+        raise ValueError("Number of files and hashes do not match.")
+    if not files and verbose:
+        print("No files to process.")
+        return
+
+    metadatas = fetch_and_process_metadata(files, verbose)
+    update_metadata_df(metadatas, hashes, files)
+    return metadatas

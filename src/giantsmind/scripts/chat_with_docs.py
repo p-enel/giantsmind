@@ -27,18 +27,13 @@ def print_response(response) -> None:
         print("\n".join(textwrap.wrap(chunk, 80, break_long_words=False)))
 
 
-def perform_similarity_search(qdrant, query):
-    similar_docs = qdrant.similarity_search_with_score(query)
+def perform_similarity_search(qdrant: Qdrant, query: str, **query_args) -> None:
+    similar_docs = qdrant.similarity_search_with_score(query, **query_args)
     for doc, score in similar_docs:
         print(f"text: {doc.page_content[:256]}\n")
         print(f"score: {score}")
         print("-" * 80)
         print()
-
-
-def retrieve_documents(qdrant, query, k=5):
-    retriever = qdrant.as_retriever(search_kwargs={"k": k})
-    return retriever.invoke(query)
 
 
 def compress_retrieve_documents(retriever, query):
@@ -171,6 +166,17 @@ if __name__ == "__main__":
     pieces of information, if applicable. Be succinct.
 
     Responses should be properly formatted to be easily read.
+    """
+
+    summarization_template = """ Summarize the following excerpt or full
+    scientific article. Do not include any additional information, you only
+    need to summarize the text.
+
+    <context>
+    {context}
+    </context>
+
+    Summarize each section of the excerpt or full article. Be succinct.
     """
 
     prompt = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
