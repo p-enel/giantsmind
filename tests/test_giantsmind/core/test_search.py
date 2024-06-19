@@ -1,6 +1,7 @@
-import pandas as pd
+# import pandas as pd
 import pytest
-from qdrant_client import models
+
+# from qdrant_client import models
 from test_search_data import (
     get_year_from_metadata_test_data,
     metadata_to_filter_test_data,
@@ -50,3 +51,21 @@ def test_search_for_articles_metadata(search_dict, expected):
 
 def test_records_to_hashes():
     pass
+
+
+test_get_metadata_from_payload_test_data = [
+    ({"key": "value"}, {"key": "value"}),
+    ({"key": {"key": "value"}}, {"key": "value"}),
+    ({"key": {"key": {"key": "value"}}}, {"key": "value"}),
+    ({"key": {"key": "value"}, "key2": "value2"}, {"key": "value", "key2": "value2"}),
+    (
+        {"key": {"key": {"key": {"key": {"key": "value"}}}, "key2": {"key22": "value22"}}, "key3": "value3"},
+        {"key": "value", "key22": "value22", "key3": "value3"},
+    ),
+]
+
+
+@pytest.mark.parametrize("payload, expected", test_get_metadata_from_payload_test_data)
+def test_get_metadata_from_payload(payload, expected):
+    actual = search.get_metadata_from_payload(payload)
+    assert actual == expected
