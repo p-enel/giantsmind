@@ -65,7 +65,8 @@ def main():
 
 def get_user_input():
     """Acquire the user's question or query."""
-    pass
+    user_question = input("Please enter your question: ")
+    return user_question
 
 
 def parse_question(user_question):
