@@ -1,16 +1,18 @@
 import asyncio
 import os
+import traceback
 from itertools import chain
 from pathlib import Path
 from typing import List, Sequence
-import traceback
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import UnstructuredMarkdownLoader
 from langchain_core.documents.base import Document
 from llama_parse import LlamaParse
 
-from giantsmind.utils import utils
+from giantsmind.utils import utils, local
+from giantsmind.utils import pdf_tools
+from giantsmind.vector_db import prep_docs
+
 
 MODELS = {"bge-small": {"model": "BAAI/bge-base-en-v1.5", "vector_size": 768}}
 PARSE_INSTRUCTIONS = """This is a scientific article. Please extract the text from the document and return it in markdown format."""
@@ -19,13 +21,6 @@ PARSE_INSTRUCTIONS = """This is a scientific article. Please extract the text fr
 def load_markdown(document_path: str) -> List[Document]:
     loader = UnstructuredMarkdownLoader(document_path)
     return loader.load()
-
-
-def get_pdf_paths(folder_path: str) -> list:
-    """Get a list of PDF files in a folder."""
-    folder = Path(folder_path)
-    pdf_files = [str(file) for file in folder.glob("*.pdf")]
-    return pdf_files
 
 
 def parse_document(file_path: str | Path, instruction: str) -> Document:
@@ -74,18 +69,31 @@ async def _attempt_parse(parser: LlamaParse, file_path: str) -> Document:
     return docs[0]
 
 
-async def aparse_document(file_path: str, instruction: str, retries: int = 2) -> Document:
+async def aparse_document(pdf_path: str, instruction: str, retries: int = 2) -> Document:
     """Asynchronously parse a single document."""
     parser = _initialize_parser(instruction)
-    for attempt in range(1, retries + 2):  # retries + 1 attempts
+    for attempt in range(1, retries + 2):
         try:
-            return await _attempt_parse(parser, file_path)
+            return await _attempt_parse(parser, pdf_path)
         except Exception as error:
             print(f"Error during attempt {attempt}/{retries + 1}:\n{type(error)}:{error}")
             if attempt == retries + 1:
-                print(f"Failed to parse {file_path} after {retries + 1} attempts.")
+                print(f"Failed to parse {pdf_path} after {retries + 1} attempts.")
                 raise
-            await asyncio.sleep(2)  # Optional: Wait a bit before retrying
+            await asyncio.sleep(2)
+
+
+def _check_exist_load_parsed_doc(pdf_path: str, verbose: bool = False) -> Document | None:
+    """Check if the document has already been parsed"""
+    fname = Path(pdf_path).name
+    doc_fname = Path(fname).with_suffix(".md")
+    doc_path = Path(local.get_local_data_path()) / "parsed_docs" / doc_fname
+    if doc_path.exists():
+        if verbose:
+            print(f"Document '{fname}' has already been parsed.")
+        return load_markdown(doc_path)
+
+    return None
 
 
 async def aparse_files(file_paths: List[str], instruction: str) -> List[Document | None]:
@@ -109,7 +117,7 @@ async def aparse_files(file_paths: List[str], instruction: str) -> List[Document
 
 
 def create_output_folder() -> str:
-    output_folder = Path(utils.get_local_data_path()) / "parsed_docs"
+    output_folder = Path(local.get_local_data_path()) / "parsed_docs"
     output_folder.mkdir(exist_ok=True)
     return str(output_folder)
 
@@ -135,28 +143,46 @@ def write_parsed_docs(file_paths: List[str], parsing_results: List[Document | No
     return parsed_file_paths
 
 
+def _pdfs_path_to_md_path(pdf_paths: List[str]) -> List[str]:
+    return [
+        Path(local.get_local_data_path()) / "parsed_docs" / Path(pdf_path).with_suffix(".md").name
+        for pdf_path in pdf_paths
+    ]
+
+
 def load_parsed_documents(parsed_files: List[str]) -> List[Document]:
     return [load_markdown(doc)[0] for doc in parsed_files]
 
 
-def chunk_documents(
-    documents: Sequence[Document], chunk_size: int = 4096, chunk_overlap: int = 256
-) -> List[List[Document]]:
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    chunked_docs = [text_splitter.split_documents([doc]) for doc in documents]
-    return chunked_docs
+def load_parsed_documents_with_pdf_path(pdf_paths: List[str]) -> List[Document]:
+    parsed_files = _pdfs_path_to_md_path(pdf_paths)
+    return load_parsed_documents(parsed_files)
 
 
-def chunk_pdfs(
-    pdf_files: Sequence[str],
+def _check_markdown_exist(pdf_path: str) -> bool:
+    fname = Path(pdf_path).name
+    doc_fname = Path(fname).with_suffix(".md")
+    doc_path = Path(local.get_local_data_path()) / "parsed_docs" / doc_fname
+    return doc_path.exists()
+
+
+def check_markdowns_exist(pdf_paths: List[str]) -> List[bool]:
+    return [_check_markdown_exist(pdf_path) for pdf_path in pdf_paths]
+
+
+def parse_pdfs(
+    pdf_paths: Sequence[str],
     chunk_size: int = 4096,
     chunk_overlap: int = 256,
 ) -> List[List[Document]]:
-    parsed_docs = asyncio.run(aparse_files(pdf_files, PARSE_INSTRUCTIONS))
-    parsed_files = write_parsed_docs(pdf_files, parsed_docs)
-    parsed_docs = load_parsed_documents(parsed_files)
-    chunked_docs = chunk_documents(parsed_docs)
-    return chunked_docs
+    pdf_paths_exist, index_exist, pdf_paths_to_process, index_to_process = utils.get_exist_absent(
+        pdf_paths, check_markdowns_exist
+    )
+    parsed_docs = asyncio.run(aparse_files(pdf_paths_to_process, PARSE_INSTRUCTIONS))
+    write_parsed_docs(pdf_paths, parsed_docs)
+    parsed_docs_existing = load_parsed_documents_with_pdf_path(pdf_paths_exist)
+    parsed_docs = utils.reorder_merge_lists(parsed_docs, parsed_docs_existing, index_to_process, index_exist)
+    return parsed_docs
 
 
 if __name__ == "__main__":
@@ -164,7 +190,7 @@ if __name__ == "__main__":
 
     from langchain.vectorstores import Qdrant
     from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-    from giantsmind.core import qdrant as gm_qdrant
+    from giantsmind.vector_db import qdrant as gm_qdrant
     from giantsmind.core import get_metadata
 
     collection = "test"
@@ -177,17 +203,20 @@ if __name__ == "__main__":
     )
 
     unproc_hashes, unproc_files = gm_qdrant.get_unprocessed_pdf_files(
-        client, collection, get_pdf_paths(pdf_folder)
+        client, collection, pdf_tools.get_pdf_paths(pdf_folder)
     )
+
+    pdf_files = pdf_tools.get_pdf_paths(pdf_folder)
 
     if len(unproc_files) == 0:
         print("All files have already been processed.")
         exit()
 
-    metadatas = get_metadata.process_metadata(unproc_files, unproc_hashes)
-    payload_files = gm_qdrant.process_and_save_payloads(metadatas, unproc_files, unproc_hashes)
+    metadatas = get_metadata.process_metadata(pdf_files)
+    payload_files = gm_qdrant.process_and_save_payloads(metadatas, unproc_files)
 
-    chunked_docs = chunk_pdfs(unproc_files)
+    parsed_docs = parse_pdfs(unproc_files)
+    chunked_docs = prep_docs.chunk_pdfs(parsed_docs)
     chunked_docs_with_payload = gm_qdrant.load_payloads_and_update_chunked_documents(
         chunked_docs, payload_files
     )

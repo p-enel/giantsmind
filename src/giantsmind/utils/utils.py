@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Any, Callable, List, Tuple
 
 
 def set_env_vars():
@@ -15,12 +16,29 @@ def set_env_vars():
         os.environ[key] = value
 
 
-if __name__ == "__main__":
-    from pathlib import Path
+def get_exist_absent(
+    list_: List[Any], func_exist: Callable[[List[Any]], bool]
+) -> Tuple[List[Any], List[int], List[Any], List[int]]:
+    exist_flags = func_exist(list_)
+    exist = [(i, elt) for i, (elt, exist) in enumerate(zip(list_, exist_flags)) if exist]
+    list_exist, index_exist = [], []
+    if len(exist) != 0:
+        index_exist, list_exist = zip(*exist)
 
-    test_pdf = (
-        Path("/home/pierre/Data/giants")
-        / "Allen et al. - 2022 - A massive 7T fMRI dataset to bridge cognitive neur.pdf"
-    )
-    output_folder = Path("/home/pierre/Data/giants") / "pages"
-    split_pdf(test_pdf, output_folder)
+    to_process = [(i, elt) for i, (elt, exist) in enumerate(zip(list_, exist_flags)) if not exist]
+    list_to_process, index_to_process = [], []
+    if len(to_process) != 0:
+        index_to_process, list_to_process = zip(*to_process)
+
+    return list_exist, index_exist, list_to_process, index_to_process
+
+
+def reorder_merge_lists(
+    docs1: List[Any], docs2: List[Any], index1: List[int], index2: List[int]
+) -> List[Any]:
+    docs_new = [None] * (len(docs1) + len(docs2))
+    for i, doc in zip(index1, docs1):
+        docs_new[i] = doc
+    for i, doc in zip(index2, docs2):
+        docs_new[i] = doc
+    return docs_new

@@ -9,7 +9,7 @@ from langchain_core.documents.base import Document
 from qdrant_client import QdrantClient, models
 from qdrant_client.http.models import Distance, VectorParams
 
-from giantsmind.utils import local, pdf_tools, utils
+from giantsmind.utils import local, utils
 
 
 def get_year_from_metadata(year_metadata: List[str]) -> List[models.FieldCondition]:
@@ -103,7 +103,7 @@ def paper_id_list_to_filter(paper_id_list: List[str]):
     ):
         raise ValueError("Argument should be a list of strings: 'id_type:id_value'.")
 
-    must = [models.FieldCondition(key="paper_metadata.ID", match=models.MatchAny(any=paper_id_list))]
+    must = [models.FieldCondition(key="paper_metadata.id", match=models.MatchAny(any=paper_id_list))]
 
     return models.Filter(must=must)
 
@@ -147,56 +147,23 @@ def setup_database_and_collection(
     return client
 
 
-def search_for_hashes(client: QdrantClient, collection_name: str, hashes: list) -> list[str]:
-    """Search for hashes in a Qdrant collection."""
-    records = client.scroll(
-        collection_name=collection_name,
-        scroll_filter=models.Filter(
-            should=[
-                models.FieldCondition(
-                    key="hash",
-                    match=models.MatchAny(any=hashes),
-                ),
-            ]
-        ),
-    )
-    hashes_found = list(set([record.payload["hash"] for record in records[0]]))
-    return hashes_found
-
-
-def get_unprocessed_pdf_files(
-    client: QdrantClient, collection_name: str, pdf_paths: List[str]
-) -> Tuple[Tuple[str], Tuple[str]]:
-    hashes = dict(zip(pdf_tools.get_pdf_hashes(pdf_paths), pdf_paths))
-    hashes_redundant = search_for_hashes(client, collection_name, list(hashes.keys()))
-    unproc_hashes, unproc_files = [], []
-    for hash_ in hashes:
-        if hash_ not in hashes_redundant:
-            unproc_hashes.append(hash_)
-            unproc_files.append(hashes[hash_])
-    return unproc_hashes, unproc_files
-
-
-def metadata_to_payload(metadata: dict, hash: str, file_path: str | Path) -> dict:
+def metadata_to_payload(metadata: dict, file_path: str | Path) -> dict:
     payload = {
-        "hash": hash,
         "file_path": str(file_path),
+        "id": metadata["id"],
         "paper_metadata": {
             "title": metadata["title"],
             "author": metadata["author"],
             "journal": metadata["journal"],
             "publication_date": metadata["publication_date"],
-            "ID": metadata["ID"],
             "url": metadata["url"],
         },
     }
     return payload
 
 
-def generate_payloads(metadatas: List[dict], hashes: Sequence[str], files: Sequence[str]) -> List[dict]:
-    return [
-        metadata_to_payload(metadata, hash, file) for metadata, hash, file in zip(metadatas, hashes, files)
-    ]
+def generate_payloads(metadatas: List[dict], files: Sequence[str]) -> List[dict]:
+    return [metadata_to_payload(metadata, file) for metadata, file in zip(metadatas, files)]
 
 
 def save_payloads_to_json(
@@ -215,10 +182,8 @@ def save_payloads_to_json(
     return output_paths
 
 
-def process_and_save_payloads(
-    metadatas: List[dict], files: Sequence[str], hashes: Sequence[str], verbose: bool = True
-) -> List[str]:
-    payloads = generate_payloads(metadatas, hashes, files)
+def process_and_save_payloads(metadatas: List[dict], files: Sequence[str], verbose: bool = True) -> List[str]:
+    payloads = generate_payloads(metadatas, files)
     payload_files = save_payloads_to_json(payloads, files)
     return payload_files
 
@@ -296,3 +261,61 @@ def get_text_from_article(client: QdrantClient, collection: str, paper_id: str) 
     docs = get_article_chunks(client, collection, paper_id)
     text = "\n".join([doc.page_content for doc in docs])
     return text
+
+
+def check_ids_exist_batch(client: QdrantClient, collection: str, IDs: List[str]) -> bool:
+    records = client.scroll(
+        collection,
+        models.Filter(
+            should=[models.FieldCondition(key="metadata.paper_metadata.ID", match=models.MatchAny(any=IDs))]
+        ),
+    )
+    return len(records[0]) > 0
+
+
+def check_id_exists(client: QdrantClient, collection: str, ID: str) -> bool:
+    records = client.scroll(
+        collection,
+        models.Filter(
+            should=[
+                models.FieldCondition(key="metadata.paper_metadata.ID", match=models.MatchValue(value=ID))
+            ]
+        ),
+    )
+
+    return len(records[0]) > 0
+
+
+def check_ids_exist(client: QdrantClient, collection: str, IDs: List[str]) -> Tuple[bool, List[str]]:
+    return [check_id_exists(client, collection, ID) for ID in IDs]
+
+
+# DEPRECATED
+# def search_for_hashes(client: QdrantClient, collection_name: str, hashes: list) -> list[str]:
+#     """Search for hashes in a Qdrant collection."""
+#     records = client.scroll(
+#         collection_name=collection_name,
+#         scroll_filter=models.Filter(
+#             should=[
+#                 models.FieldCondition(
+#                     key="hash",
+#                     match=models.MatchAny(any=hashes),
+#                 ),
+#             ]
+#         ),
+#     )
+#     hashes_found = list(set([record.payload["hash"] for record in records[0]]))
+#     return hashes_found
+
+
+# def get_unprocessed_pdf_files(
+#     client: QdrantClient, collection_name: str, pdf_paths: List[str]
+# ) -> Tuple[Tuple[str], Tuple[str]]:
+#     hashes = dict(zip(pdf_tools.get_pdf_hashes(pdf_paths), pdf_paths))
+#     hashes_redundant = search_for_hashes(client, collection_name, list(hashes.keys()))
+#     unproc_hashes, unproc_files = [], []
+#     for hash_ in hashes:
+#         if hash_ not in hashes_redundant:
+#             unproc_hashes.append(hash_)
+#             unproc_files.append(hashes[hash_])
+#     return unproc_hashes, unproc_files
