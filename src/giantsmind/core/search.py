@@ -46,26 +46,26 @@ def get_matching_publication_dates(metadata_df: pd.DataFrame, publication_dates:
     return metadata_df[cond | cond_range]
 
 
-def search_for_articles_metadata(metadata_df: pd.DataFrame, search: Dict[str, List[str]]) -> pd.DataFrame:
-    """Search for articles in a metadata dataframe."""
-    allowed_keys = ["author", "journal", "year"]
-    if not all(key in allowed_keys for key in search.keys()):
-        raise ValueError(f"Invalid key: keys should be {allowed_keys}.")
-    results = deepcopy(metadata_df)
-    if "author" in search:
-        results = results[
-            results["author"].apply(lambda x: any(author.lower() in x.lower() for author in search["author"]))
-        ]
-    if "journal" in search:
-        results = results[
-            results["journal"].apply(
-                lambda x: any(journal.casefold() in x.casefold() for journal in search["journal"])
-            )
-        ]
-    if "year" in search:
-        results = get_matching_publication_dates(results, search["year"])
+# def search_for_articles_metadata(metadata_df: pd.DataFrame, search: Dict[str, List[str]]) -> pd.DataFrame:
+#     """Search for articles in a metadata dataframe."""
+#     allowed_keys = ["author", "journal", "year"]
+#     if not all(key in allowed_keys for key in search.keys()):
+#         raise ValueError(f"Invalid key: keys should be {allowed_keys}.")
+#     results = deepcopy(metadata_df)
+#     if "author" in search:
+#         results = results[
+#             results["author"].apply(lambda x: any(author.lower() in x.lower() for author in search["author"]))
+#         ]
+#     if "journal" in search:
+#         results = results[
+#             results["journal"].apply(
+#                 lambda x: any(journal.casefold() in x.casefold() for journal in search["journal"])
+#             )
+#         ]
+#     if "year" in search:
+#         results = get_matching_publication_dates(results, search["year"])
 
-    return results
+#     return results
 
 
 def get_metadata_from_payload(payload: Dict[str | dict, str]) -> Dict[str, str]:
@@ -103,17 +103,18 @@ if __name__ == "__main__":
 
     utils.set_env_vars()
 
-    metadata_df = get_metadata.load_metadata_df()
-    metadata_search = {"year": [">=:2021"], "journal": ["arxiv"], "author": ["kording"]}
-    metadata_search = {"author": ["kording"]}
-    search_for_articles_metadata(metadata_df, metadata_search)
+    # metadata_df = get_metadata.load_metadata_df()
+    # metadata_search = {"year": [">=:2021"], "journal": ["arxiv"], "author": ["kording"]}
+    # metadata_search = {"author": ["kording"]}
+    # search_for_articles_metadata(metadata_df, metadata_search)
 
     ############################################
 
     from langchain.vectorstores import Qdrant
     from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-    from giantsmind import qdrant as gm_qdrant
-    from giantsmind import get_metadata
+    from giantsmind.vector_db import qdrant as gm_qdrant
+
+    # from giantsmind import get_metadata
     from giantsmind import utils
 
     utils.set_env_vars()
@@ -135,7 +136,6 @@ if __name__ == "__main__":
     search_kwargs = {"k": 5}
     result_docs = search_articles_with_similarity(qdrant, query, **search_kwargs)
     len(result_docs)
-    print_doc_list(result_docs)
 
     import tiktoken
     import qdrant
@@ -146,4 +146,4 @@ if __name__ == "__main__":
         return num_tokens
 
     paper_id = "doi:10.1038/nature12160"
-    text = qdrant.get_text_from_article(client, collection, paper_id)
+    text = gm_qdrant.get_text_from_article(client, collection, paper_id)

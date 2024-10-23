@@ -31,3 +31,10 @@ def split_pdf(input_pdf: str, output_folder: str) -> None:
         output_filename = output_path / f"{base_filename}_page_{page_num + 1}.pdf"
         with open(output_filename, "wb") as output_pdf:
             pdf_writer.write(output_pdf)
+
+
+def get_pdf_paths(folder_path: str) -> list:
+    """Get a list of PDF files in a folder."""
+    folder = Path(folder_path)
+    pdf_files = [str(file) for file in folder.glob("*.pdf")]
+    return pdf_files

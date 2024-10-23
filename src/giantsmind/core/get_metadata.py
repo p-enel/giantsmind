@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import xml.etree.ElementTree as ET
@@ -7,13 +8,10 @@ from pathlib import Path
 from typing import List, Sequence, Tuple
 
 import fitz
-import pandas as pd
 import PyPDF2
 import requests
 
-from giantsmind.utils import local
-from giantsmind.database.schema import Session
-from giantsmind.database.operations import add_paper
+from giantsmind.utils import local, utils
 
 
 def extract_metadata_from_pdf(pdf_path: str, verbose: bool = False) -> dict:
@@ -24,7 +22,7 @@ def extract_metadata_from_pdf(pdf_path: str, verbose: bool = False) -> dict:
     # Extract embedded metadata if available
     extracted_metadata = {
         "title": metadata.get("title", ""),
-        "author": metadata.get("author", ""),
+        "authors": metadata.get("author", ""),
         "subject": metadata.get("subject", ""),
     }
     return extracted_metadata
@@ -106,9 +104,7 @@ def fetch_metadata_from_doi(doi: str, verbose: bool = False) -> dict:
     data = response.json().get("message", {})
 
     title = data.get("title")[0]
-    authors = "; ".join(
-        f"{author.get('given', '')} {author.get('family', '')}" for author in data.get("author", [])
-    )
+    authors = [f"{author.get('given', '')} {author.get('family', '')}" for author in data.get("author", [])]
     url = data.get("URL", "")
 
     journal = data.get("container-title", [None])
@@ -135,11 +131,11 @@ def fetch_metadata_from_doi(doi: str, verbose: bool = False) -> dict:
 
     metadata = {
         "title": title,
-        "author": authors,
+        "authors": authors,
         "url": url,
         "journal": journal,
         "publication_date": publication_date,
-        "id": f"doi:{doi}",
+        "paper_id": f"doi:{doi}",
     }
 
     if verbose:
@@ -168,10 +164,10 @@ def fetch_metadata_from_arxiv(arxiv_id: str, verbose: bool = False) -> dict:
 
     title = entry.find("{http://www.w3.org/2005/Atom}title").text.replace("\n", " ")
     title = " ".join(title.split())
-    authors = "; ".join(
+    authors = [
         author.find("{http://www.w3.org/2005/Atom}name").text
         for author in entry.findall("{http://www.w3.org/2005/Atom}author")
-    )
+    ]
     url = entry.find("{http://www.w3.org/2005/Atom}id").text
     published = entry.find("{http://www.w3.org/2005/Atom}published").text
     journal = "arXiv"  # arXiv papers typically don't have a journal, so we'll set it to 'arXiv'
@@ -181,11 +177,11 @@ def fetch_metadata_from_arxiv(arxiv_id: str, verbose: bool = False) -> dict:
 
     metadata = {
         "title": title,
-        "author": authors,
+        "authors": authors,
         "url": url,
         "journal": journal,
         "publication_date": publication_date,
-        "id": f"arXiv:{arxiv_id}",
+        "paper_id": f"arXiv:{arxiv_id}",
     }
 
     if verbose:
@@ -234,6 +230,36 @@ def get_arxiv_metadata(metadata: dict, pdf_path: str, verbose: bool) -> dict:
     return {}
 
 
+def _check_metadata_exist(pdf_path: str) -> bool:
+    # Check if metadata file exists
+    fname = Path(pdf_path).name
+    metadata_fname = Path(fname).with_suffix(".json")
+    metadata_path = Path(local.get_local_data_path()) / "parsed_docs" / metadata_fname
+    return metadata_path.exists()
+
+
+def get_all_metadata_from_json() -> List[str]:
+    metadata_dir = Path(local.get_local_data_path()) / "parsed_docs"
+    metadata_paths = [str(f) for f in metadata_dir.glob("*.json")]
+    metadatas = []
+    for metadata_path in metadata_paths:
+        with open(metadata_path, "r") as f:
+            metadatas.append(json.load(f))
+    return metadatas
+
+
+def check_metadatas_exist(pdf_paths: List[str]) -> List[bool]:
+    return [_check_metadata_exist(pdf_path) for pdf_path in pdf_paths]
+
+
+def _load_metadata_json(pdf_path: str) -> dict:
+    fname = Path(pdf_path).name
+    metadata_fname = Path(fname).with_suffix(".json")
+    metadata_path = Path(local.get_local_data_path()) / "parsed_docs" / metadata_fname
+    with metadata_path.open("r") as f:
+        return json.load(f)
+
+
 def get_metadata(pdf_path: str, verbose: bool = False) -> dict:
     # Extract metadata from the PDF file
     if verbose:
@@ -258,13 +284,13 @@ def get_metadata(pdf_path: str, verbose: bool = False) -> dict:
         print("    No metadata found from DOI or arXiv ID")
 
     # Remove extra fields from the metadata
-    all_fields = ["title", "author", "journal", "publication_date", "ID", "url"]
+    all_fields = ["title", "authors", "journal", "publication_date", "paper_id", "url"]
     metadata_pdf = {key: metadata_pdf.get(key, "") for key in metadata_pdf if key in all_fields}
     return metadata_pdf
 
 
 def deal_with_missing_fields(metadata: dict, pdf_path: str) -> dict:
-    mandatory_fields = ["title", "author", "journal", "publication_date"]
+    mandatory_fields = ["title", "authors", "journal", "publication_date"]
     missing_fields = [key for key in mandatory_fields if key not in metadata.keys() or not metadata[key]]
 
     if not missing_fields:
@@ -356,7 +382,7 @@ def ask_to_edit_metadata_pdf(pdf_path: str, metadata: dict):
     subject = f"{metadata['journal']} ({metadata['publication_date']}) ID: {metadata['id']}"
     metadata_for_df = {
         "/Title": metadata["title"],
-        "/Author": metadata["author"],
+        "/Author": metadata["authors"],
         "/Subject": subject,
     }
     edit_pdf_metadata(pdf_path, pdf_path, metadata_for_df)
@@ -377,21 +403,31 @@ def add_file_path_to_metadata(metadatas: List[dict], pdf_paths: List[str]) -> Li
     return new_metadatas
 
 
-def update_metadata_df(metadatas: List[dict]) -> None:
-    """Update the metadata dataframe with new metadata."""
-    session = Session()
-    for metadata in metadatas:
-        add_paper(session, metadata)
+def _save_metadata_to_json(metadata: dict, pdf_path: str):
+    fname = Path(pdf_path).name
+    metadata_fname = Path(fname).with_suffix(".json")
+    metadata_path = Path(local.get_local_data_path()) / "parsed_docs" / metadata_fname
+    with metadata_path.open("w") as f:
+        json.dump(metadata, f, indent=4)
 
 
-def process_metadata(files: Sequence[str], hashes: Sequence[str], verbose: bool = True) -> List[dict]:
+def save_metadatas_to_json(metadatas: List[dict], pdf_paths: List[str]):
+    for metadata, pdf_path in zip(metadatas, pdf_paths):
+        _save_metadata_to_json(metadata, pdf_path)
+
+
+def process_metadata(pdf_paths: Sequence[str], verbose: bool = True) -> List[dict]:
     """Get and save metadata for a list of files."""
-    if len(files) != len(hashes):
-        raise ValueError("Number of files and hashes do not match.")
-    if not files and verbose:
+    if not pdf_paths and verbose:
         print("No files to process.")
         return
 
-    metadatas = fetch_and_process_metadata(files, verbose)
-    update_metadata_df(metadatas, hashes, files)
+    pdf_paths_exist, index_exist, pdf_paths_to_process, index_to_process = utils.get_exist_absent(
+        pdf_paths, check_metadatas_exist
+    )
+    metadatas = fetch_and_process_metadata(pdf_paths_to_process, verbose)
+    metadatas = add_file_path_to_metadata(metadatas, pdf_paths_to_process)
+    save_metadatas_to_json(metadatas, pdf_paths_to_process)
+    metadatas_existing = [_load_metadata_json(pdf_path) for pdf_path in pdf_paths_exist]
+    metadatas = utils.reorder_merge_lists(metadatas_existing, metadatas, index_exist, index_to_process)
     return metadatas
