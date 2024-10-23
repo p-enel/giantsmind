@@ -10,6 +10,7 @@ from giantsmind.database import paper_operations as paper_ops
 from giantsmind.utils import local, pdf_tools, utils
 from giantsmind.vector_db import base, prep_docs
 from giantsmind.vector_db import qdrant as gm_qdrant
+from giantsmind.vector_db import chroma_client
 
 PDF_FOLDER = "/home/pierre/Data/giants"
 MODELS = {"bge-small": {"model": "BAAI/bge-base-en-v1.5", "vector_size": 768}}
@@ -31,7 +32,6 @@ def add_paper_to_dbs(vc_client: base.VectorDBClient, paper_chunks: List[Document
 
 
 if __name__ == "__main__":
-    from giantsmind.vector_db import chroma_client
 
     collection = "test"
     embeddings_model = "bge-small"
