@@ -8,6 +8,10 @@ import pandas as pd
 import langchain.vectorstores
 from langchain_core.documents.base import Document
 
+from giantsmind.utils.local import get_local_data_path
+from giantsmind.vector_db.chroma_client import ChromadbClient
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+
 # TODO: Use thefuzz package to search for partial matches in metadata
 
 
@@ -94,6 +98,23 @@ def search_articles_with_similarity(
 def retrieve_documents(vectorstore: langchain.vectorstores, query: str, **search_kwargs) -> List[Document]:
     retriever = vectorstore.as_retriever(search_kwargs=search_kwargs)
     return retriever.invoke(query)
+
+
+def execute_content_search(content_query: str, metadata_results: List[Dict[str, str]] = None) -> List[Document]:
+    embeddings_model = "bge-small"
+    persist_directory = get_local_data_path()
+    collection_name = "main_collection"
+
+    embeddings = FastEmbedEmbeddings(model_name=embeddings_model)
+    client = ChromadbClient(collection_name=collection_name, embedding_function=embeddings, persist_directory=persist_directory)
+
+    if metadata_results:
+        paper_ids = [result["paper_id"] for result in metadata_results]
+        results = client.similarity_search(content_query, where={"paper_id": {"$in": paper_ids}})
+    else:
+        results = client.similarity_search(content_query)
+
+    return results
 
 
 if __name__ == "__main__":

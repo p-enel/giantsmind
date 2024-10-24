@@ -3,6 +3,10 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from giantsmind.utils import utils
 from giantsmind.agent.parsing_agent import parse_question as parse_question_agent
+from giantsmind.vector_db.chroma_client import ChromadbClient
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
+from giantsmind.utils.local import get_local_data_path
+from giantsmind.core.search import execute_content_search
 
 chain = (
     PromptTemplate.from_template(
@@ -100,15 +104,6 @@ def execute_sql_query(sql_query):
 def prepare_content_search_query(content_keywords):
     """
     Prepare the content search query using the extracted content keywords.
-    """
-    pass
-
-
-def execute_content_search(content_query, metadata_results=None):
-    """
-    Execute the content search in the vector database.
-    If metadata_results are provided, limit the search to those articles.
-    Returns the content search results.
     """
     pass
 
