@@ -41,7 +41,7 @@ def _get_chat_model() -> BaseChatModel:
     return model
 
 
-def get_sql_query(user_message: str, collection_id: int) -> str:
+def get_sql_query(user_message: str, collection_id: int = 1) -> str:
     schema = _get_sql_schema()
     system_sql = _sql_sys_msg(schema, collection_id)
     model = _get_chat_model()
@@ -54,7 +54,7 @@ def _preprocess_query(query: str) -> str:
     if query == NO_QUERY:
         return None
     if query.startswith(SQL_PREFIX):
-        return query[len(SQL_PREFIX):]
+        return query[len(SQL_PREFIX) :]
     logger.error(f"Cannot preprocess query: Invalid query {query}")
     raise ValueError(f"Wrong query {query}")
 
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     execute_query(query)
     answer = get_sql_query(
         "Get all the papers that authors Robert Kennedy and Jennifer Lawrence published together in Plos comp biology published after 2010",
-        1
+        1,
     )
 
     print(get_buffer_string([answer]))
