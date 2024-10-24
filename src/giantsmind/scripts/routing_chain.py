@@ -2,6 +2,7 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from giantsmind.utils import utils
+from giantsmind.agent.parsing_agent import parse_question as parse_question_agent
 
 chain = (
     PromptTemplate.from_template(
@@ -65,7 +66,7 @@ def main():
 
 def get_user_input():
     """Acquire the user's question or query."""
-    pass
+    return input("Please enter your question: ")
 
 
 def parse_question(user_question):
@@ -77,7 +78,7 @@ def parse_question(user_question):
 
     Returns a dictionary with the three entries.
     """
-    pass
+    return parse_question_agent(user_question)
 
 
 def generate_sql_query(metadata_plaintext):
