@@ -30,37 +30,28 @@ chain.invoke({"question": "how do I call Anthropic?"})
 
 
 def main():
-    # Step 1: User Input Acquisition
     user_question = get_user_input()
 
-    # Step 2: Initial Question Parsing and Intent Recognition
     parsed_elements = parse_question_agent(user_question)
 
-    # Step 3: Determine Required Operations and Process Accordingly
     metadata_results = None
     if parsed_elements.get("metadata_plain_text_search"):
-        # Step 4: Generate SQL Query from Metadata Plain Text Description
         sql_query = generate_sql_query(parsed_elements["metadata_plain_text_search"])
-        # Step 5: Execute SQL Query to Retrieve Metadata Results
         metadata_results = execute_sql_query(sql_query)
 
     content_results = None
     if parsed_elements.get("content_search"):
-        # Step 6: Execute Content Search, Applying Metadata Filters if Available
         paper_ids = extract_paper_ids(metadata_results)
         content_results = execute_content_search(parsed_elements["content_search"], paper_ids)
 
-    # Step 8: Aggregate Results
     aggregated_context = aggregate_results(
         metadata_results=metadata_results,
         content_results=content_results,
         general_knowledge_required=parsed_elements.get("general_knowledge_required"),
     )
 
-    # Step 9: Generate Final Answer Using Aggregated Context
     final_answer = generate_final_answer(user_question, aggregated_context)
 
-    # Step 10: Deliver Answer to User
     display_answer(final_answer)
 
 
