@@ -59,7 +59,7 @@ class ChatFullContext:
 
     @staticmethod
     def get_sys_msg_path(msg_name: str) -> str:
-        return Path(agent.__file__).parent / "system_messages" / msg_name
+        return Path(agent.__file__).parent / "messages" / msg_name
 
 
 if __name__ == "__main__":
