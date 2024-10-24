@@ -100,7 +100,7 @@ def retrieve_documents(vectorstore: langchain.vectorstores, query: str, **search
     return retriever.invoke(query)
 
 
-def execute_content_search(content_query: str, metadata_results: List[Dict[str, str]] = None) -> List[Document]:
+def execute_content_search(content_query: str, paper_ids: List[str] = None) -> List[Document]:
     embeddings_model = "bge-small"
     persist_directory = get_local_data_path()
     collection_name = "main_collection"
@@ -108,8 +108,7 @@ def execute_content_search(content_query: str, metadata_results: List[Dict[str, 
     embeddings = FastEmbedEmbeddings(model_name=embeddings_model)
     client = ChromadbClient(collection_name=collection_name, embedding_function=embeddings, persist_directory=persist_directory)
 
-    if metadata_results:
-        paper_ids = [result["paper_id"] for result in metadata_results]
+    if paper_ids:
         results = client.similarity_search(content_query, where={"paper_id": {"$in": paper_ids}})
     else:
         results = client.similarity_search(content_query)

@@ -34,7 +34,7 @@ def main():
     user_question = get_user_input()
 
     # Step 2: Initial Question Parsing and Intent Recognition
-    parsed_elements = parse_question(user_question)
+    parsed_elements = parse_question_agent(user_question)
 
     # Step 3: Determine Required Operations and Process Accordingly
     metadata_results = None
@@ -46,10 +46,9 @@ def main():
 
     content_results = None
     if parsed_elements.get("content_search"):
-        # Step 6: Prepare Content Search Query
-        content_query = prepare_content_search_query(parsed_elements["content_search"])
-        # Step 7: Execute Content Search, Applying Metadata Filters if Available
-        content_results = execute_content_search(content_query, metadata_results)
+        # Step 6: Execute Content Search, Applying Metadata Filters if Available
+        paper_ids = extract_paper_ids(metadata_results)
+        content_results = execute_content_search(parsed_elements["content_search"], paper_ids)
 
     # Step 8: Aggregate Results
     aggregated_context = aggregate_results(
@@ -101,11 +100,13 @@ def execute_sql_query(sql_query):
     pass
 
 
-def prepare_content_search_query(content_keywords):
+def extract_paper_ids(metadata_results):
     """
-    Prepare the content search query using the extracted content keywords.
+    Extract paper IDs from metadata results.
     """
-    pass
+    if metadata_results:
+        return [result["paper_id"] for result in metadata_results]
+    return []
 
 
 def aggregate_results(metadata_results=None, content_results=None, general_knowledge_required=None):
