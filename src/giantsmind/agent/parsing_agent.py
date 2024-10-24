@@ -29,7 +29,7 @@ def parse_question(user_question: str) -> Dict[str, Optional[str]]:
         dict: A dictionary containing the parsed outputs: metadata_search, content_search, general_knowledge.
     """
 
-    model = ChatAnthropic(model="claude-3-5-sonnet-20240620")
+    model = ChatAnthropic(model="claude-3-5-sonnet-latest")
     prompt = generate_prompt(user_question)
     response = model.invoke(prompt)
 
