@@ -1,18 +1,21 @@
 from langchain_anthropic import ChatAnthropic
 from giantsmind.utils import utils
 from pathlib import Path
+from typing import Dict, Optional
 
 utils.set_env_vars()
 
+PROMPT_PATH = Path(__file__).parent / "messages" / "parsing_prompt.txt"
+ERROR_MESSAGE = "Error: Multiple content requests detected!"
+
 
 def generate_prompt(user_question: str) -> str:
-    prompt_path = Path(__file__).parent / "messages" / "parsing_prompt.txt"
-    with open(prompt_path, "r") as file:
+    with open(PROMPT_PATH, "r") as file:
         prompt = file.read()
     return prompt.format(user_question=user_question)
 
 
-def parse_question(user_question):
+def parse_question(user_question: str) -> Dict[str, Optional[str]]:
     """
     Parses the user's question into three parts:
     - Metadata plain text search
@@ -31,7 +34,7 @@ def parse_question(user_question):
     response = model.invoke(prompt)
 
     # Handle multiple questions detected
-    if "Error: Multiple content requests detected!" in response.content:
+    if ERROR_MESSAGE in response.content:
         return {"error": response.content.strip()}
 
     parsed_response = response.content.strip().split("\n")

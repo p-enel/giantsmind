@@ -9,10 +9,14 @@ from giantsmind.core.data_management import get_context_from_collection
 from giantsmind import agent
 from giantsmind.utils import utils
 
+SYSTEM_MESSAGE_TEMPLATE = "<system> {sys_txt} </system>\n{paper_context}"
+DEFAULT_MODEL = "claude-3-5-sonnet-20240620"
+DEFAULT_SYS_MSG_NAME = "full_context.txt"
+
 
 def generate_sys_message(sys_txt: str, collection_name: str) -> str:
     paper_context = get_context_from_collection(collection_name)
-    context = f"<system> {sys_txt} </system>\n{paper_context}"
+    context = SYSTEM_MESSAGE_TEMPLATE.format(sys_txt=sys_txt, paper_context=paper_context)
     return context
 
 
@@ -41,7 +45,7 @@ class ChatFullContext:
             sys_txt = f.read()
         return sys_txt
 
-    def _compile_sys_message(self, instruct_path: str, gen_ctx_args) -> SystemMessage:
+    def _compile_sys_message(self, instruct_path: str, gen_ctx_args: Tuple[Tuple, Dict]) -> SystemMessage:
         sys_instruct = self._load_instructions(instruct_path)
         sys_txt = self._generate_context(
             sys_instruct,
@@ -67,9 +71,9 @@ if __name__ == "__main__":
     utils.set_env_vars()
 
     chat = ChatFullContext(
-        sys_msg_name="full_context.txt",
+        sys_msg_name=DEFAULT_SYS_MSG_NAME,
         chat_model=ChatAnthropic,
-        model="claude-3-5-sonnet-20240620",
+        model=DEFAULT_MODEL,
         generate_full_sys_msg=generate_sys_message,
         gen_ctx_args=(("Testing interactions",), {}),
     )
