@@ -2,11 +2,9 @@ from langchain_anthropic import ChatAnthropic
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
 from giantsmind.utils import utils
-from giantsmind.agent.parsing_agent import parse_question as parse_question_agent
-from giantsmind.vector_db.chroma_client import ChromadbClient
-from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-from giantsmind.utils.local import get_local_data_path
-from giantsmind.core.search import execute_content_search
+from giantsmind.agent import parsing_agent
+from giantsmind.agent import sql_agent
+from giantsmind.core import search
 
 chain = (
     PromptTemplate.from_template(
@@ -32,17 +30,17 @@ chain.invoke({"question": "how do I call Anthropic?"})
 def main():
     user_question = get_user_input()
 
-    parsed_elements = parse_question_agent(user_question)
+    parsed_elements = parsing_agent.parse_question(user_question)
 
     metadata_results = None
     if parsed_elements.get("metadata_plain_text_search"):
-        sql_query = generate_sql_query(parsed_elements["metadata_plain_text_search"])
-        metadata_results = execute_sql_query(sql_query)
+        sql_query = sql_agent.get_sql_query(parsed_elements["metadata_plain_text_search"])
+        metadata_results = sql_agent.execute_query(sql_query)
 
     content_results = None
     if parsed_elements.get("content_search"):
         paper_ids = extract_paper_ids(metadata_results)
-        content_results = execute_content_search(parsed_elements["content_search"], paper_ids)
+        content_results = search.execute_content_search(parsed_elements["content_search"], paper_ids)
 
     aggregated_context = aggregate_results(
         metadata_results=metadata_results,
@@ -61,34 +59,6 @@ def main():
 def get_user_input():
     """Acquire the user's question or query."""
     return input("Please enter your question: ")
-
-
-def parse_question(user_question):
-    """
-    Use an LLM to parse the user's question and identify:
-    - metadata plain text search: Plain text description for metadata search, or None if not needed.
-    - content search: Short sentence describing the content search, or None if not needed.
-    - general knowledge required: Short sentence describing any general knowledge that may assist the answer, or None.
-
-    Returns a dictionary with the three entries.
-    """
-    return parse_question_agent(user_question)
-
-
-def generate_sql_query(metadata_plaintext):
-    """
-    Use an LLM to generate an SQL query based on the plain text metadata description.
-    Returns the SQL query as a string.
-    """
-    pass
-
-
-def execute_sql_query(sql_query):
-    """
-    Execute the SQL query against the metadata SQLite database.
-    Returns the metadata results (e.g., a list of article IDs).
-    """
-    pass
 
 
 def extract_paper_ids(metadata_results):
