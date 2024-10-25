@@ -1,20 +1,13 @@
-from giantsmind.agent import answering_agent, sql_agent
+from giantsmind.agent import answering_agent, parsing_agent, sql_agent
 from giantsmind.core import process_results as proc_res
 from giantsmind.core import search
 from giantsmind.utils.logging import logger
 
 
 def main():
-    # user_question = input("Please enter your question: ")
-    user_question = "How is a microstate defined in the papers in the database?"
+    user_question = input("Please enter your question: ")
 
-    # parsed_elements = parsing_agent.parse_question(user_question)
-
-    parsed_elements = {
-        "metadata_search": 'Retrieve papers containing "microstate" in their metadata',
-        "content_search": "definition of microstate",
-        "general_knowledge": "Provide general context on microstates in physics/thermodynamics if needed",
-    }
+    parsed_elements = parsing_agent.parse_question(user_question)
 
     if "error" in parsed_elements:
         print(parsed_elements["error"])
@@ -22,8 +15,7 @@ def main():
 
     metadata_results = None
     if parsed_elements.get("metadata_search"):
-        # sql_query = sql_agent.get_sql_query(parsed_elements["metadata_search"])
-        sql_query = "SQL: SELECT DISTINCT p.paper_id \nFROM papers p\nJOIN paper_collection pc ON p.paper_id = pc.paper_id\nWHERE p.title LIKE '%microstate%'\nAND pc.collection_id = 1;"
+        sql_query = sql_agent.get_sql_query(parsed_elements["metadata_search"])
         metadata_results = sql_agent.execute_metadata_query(sql_query)
 
     content_results = None
