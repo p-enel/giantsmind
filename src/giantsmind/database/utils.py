@@ -82,9 +82,6 @@ def _find_papers(
     titles: List[str] = None,
     year_ranges: List[str] = None,
 ) -> List[Paper]:
-    import ipdb
-
-    ipdb.set_trace()
 
     filters = []
 

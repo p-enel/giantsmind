@@ -6,7 +6,7 @@ from typing import Dict, Optional
 utils.set_env_vars()
 
 PROMPT_PATH = Path(__file__).parent / "messages" / "parsing_prompt.txt"
-ERROR_MESSAGE = "Error: Multiple content requests detected!"
+ERROR_MESSAGE = "Error:"  # Multiple content requests detected!"
 
 
 def generate_prompt(user_question: str) -> str:
@@ -42,6 +42,11 @@ def parse_question(user_question: str) -> Dict[str, Optional[str]]:
     metadata_search = parsed_response[0].replace("Metadata Search: ", "").strip()
     content_search = parsed_response[1].replace("Content Search: ", "").strip()
     general_knowledge = parsed_response[2].replace("General Knowledge: ", "").strip()
+
+    # Make sure the strings are replaced with None if the string is "None"
+    metadata_search = None if metadata_search == "None" else metadata_search
+    content_search = None if content_search == "None" else content_search
+    general_knowledge = None if general_knowledge == "None" else general_knowledge
 
     return {
         "metadata_search": metadata_search,
