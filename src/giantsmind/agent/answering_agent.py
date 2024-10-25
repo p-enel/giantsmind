@@ -1,7 +1,7 @@
 from pathlib import Path
-from typing import Dict, Optional
 
 from langchain_anthropic import ChatAnthropic
+
 from giantsmind.utils import utils
 
 utils.set_env_vars()
@@ -17,7 +17,7 @@ def generate_answering_prompt(user_question: str, context: str) -> str:
 
 def answer_question(user_question: str, context: str) -> str:
     model = ChatAnthropic(model="claude-3-5-sonnet-latest")
-    prompt = generate_answering_prompt(context)
+    prompt = generate_answering_prompt(user_question, context)
     response = model.invoke(prompt)
     return response.content.strip()
 

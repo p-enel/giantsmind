@@ -1,3 +1,4 @@
+from typing import List
 import Levenshtein
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine
@@ -54,9 +55,26 @@ def author_match(conn, rec):
 
 def execute_query(query, engine: Engine = engine):
     with engine.connect() as connection:
+        connection.execute(sql_txt("PRAGMA group_concat_max_len = 10;"))
         results = connection.execute(sql_txt(query)).fetchall()
 
     return results
+
+
+def retrive_papers_metadata(paper_ids: List[str], engine: Engine = engine):
+    query = f"""SELECT 
+    papers.title,
+    papers.journal_id,
+    papers.publication_date,
+    GROUP_CONCAT(authors.name, ', ') AS authors
+FROM papers
+LEFT JOIN author_paper ON papers.paper_id = author_paper.paper_id
+LEFT JOIN authors ON author_paper.author_id = authors.author_id
+LEFT JOIN journals ON papers.journal_id = journals.journal_id
+WHERE papers.paper_id IN {tuple(paper_ids)}
+GROUP BY papers.paper_id, journals.name;
+    """
+    return execute_query(query, engine)
 
 
 if __name__ == "__main__":

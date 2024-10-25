@@ -15,5 +15,4 @@ class ChromadbClient(Chroma, VectorDBClient):
         return exists
 
     def similarity_search(self, query: str, **kwargs) -> List[Tuple[Document, float]]:
-        vector = self.embeddings.embed_query(query)
-        return Chroma.similarity_search_with_score(self, query, kwargs)(self, vector, **kwargs)
+        return Chroma.similarity_search_with_score(self, query, **kwargs)

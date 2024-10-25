@@ -1,6 +1,6 @@
 from context import Context, CollectionId
 from state import states
-from giantsmind.agent.sql_agent import get_sql_query, execute_query
+from giantsmind.agent.sql_agent import get_sql_query, execute_metadata_query
 from typing import List
 from giantsmind.database import collection_operations as col_ops
 from giantsmind.database import utils as db_utils
@@ -29,7 +29,7 @@ def metadata_search(search_scope: CollectionId) -> CollectionId:
             logger.debug("No query was generated.")
             print("No query was generated. Did you ask for papers?")
             continue
-        results = execute_query(query)
+        results = execute_metadata_query(query)
         _check_sql_results(results)
         collection_id = col_ops.create_collection("results", results, overwrite=True)
         break

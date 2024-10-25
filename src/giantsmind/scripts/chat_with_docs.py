@@ -15,6 +15,8 @@ from langchain_groq import ChatGroq
 from parse_documents import create_client
 from utils import set_env_vars
 
+from giantsmind.core import process_results
+
 MODELS = {"bge-small": {"model": "BAAI/bge-base-en-v1.5", "vector_size": 768}}
 
 
@@ -100,18 +102,6 @@ async def main():
     print_response(response)
 
 
-def combine_docs(documents: List[Document], **kwargs) -> str:
-    output = ["-" * 80]
-    for doc in documents:
-        metadata = doc.metadata["paper_metadata"]
-        metadata_str = f"The following text is an excerpt of the article entitled '{metadata['title']}' from author(s) {metadata['author']}. It was published in {metadata['journal']} in (year-month-day) {metadata['publication_date']}.\n\n\n"
-        output.append(metadata_str)
-        output.append(doc.page_content)
-        output.append("-" * 80)
-    output.append("End of excerpts.")
-    return "\n".join(output)
-
-
 class CombinePapersChunks(BaseCombineDocumentsChain):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -120,7 +110,7 @@ class CombinePapersChunks(BaseCombineDocumentsChain):
         return self.combine_docs(documents, **kwargs)
 
     def combine_docs(self, documents: List[Document], **kwargs) -> Tuple[str, dict]:
-        return combine_docs(documents, **kwargs), {}
+        return process_results.combine_docs(documents, **kwargs), {}
 
     def invoke(
         self,
