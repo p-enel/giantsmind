@@ -15,11 +15,7 @@ from collection_operations import (
 from context import Context, context_updater
 from state import states
 from helpers import Options, state_handler, list2optargs
-from interact_operations import (
-    act_ask_question_across_papers,
-    act_ask_question_for_each_paper,
-    act_summarize_each_paper,
-)
+import interact_operations as interact_ops
 from search_operations import (
     act_refine_search,
     act_search_with_content,
@@ -143,9 +139,7 @@ def state_func_INTERACT_WITH_PAPERS(context: Context) -> Context:
 
     options = list2optargs(
         [
-            ("Summarize Each Paper", act_summarize_each_paper),
-            ("Ask Question Across Papers", act_ask_question_across_papers),
-            ("Ask Question for Each Paper", act_ask_question_for_each_paper),
+            ("Ask Question", interact_ops.act_ask_question),
             ("Set Paper Context", context_updater({"current_state": states.SEARCH_PAPERS})),
             (
                 "Select Papers",
@@ -159,7 +153,7 @@ def state_func_INTERACT_WITH_PAPERS(context: Context) -> Context:
         ]
     ) + [("q", "Quit", context_updater({"current_state": states.EXIT}))]
 
-    return state_handler(context, options)
+    return state_handler(context, Options(options))
 
 
 def state_func_EXIT(context: Context) -> Context:

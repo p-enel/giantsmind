@@ -1,14 +1,17 @@
 import operator
-from copy import deepcopy
-from typing import Dict, List
-
-import numpy as np
-import pandas as pd
+from typing import Dict, List, Tuple
 
 import langchain.vectorstores
+import numpy as np
+import pandas as pd
+from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain_core.documents.base import Document
 
+from giantsmind.utils.local import get_local_data_path
+from giantsmind.vector_db.chroma_client import ChromadbClient
+
 # TODO: Use thefuzz package to search for partial matches in metadata
+MODELS = {"bge-small": {"model": "BAAI/bge-base-en-v1.5", "vector_size": 768}}
 
 
 def get_matching_publication_dates(metadata_df: pd.DataFrame, publication_dates: List[str]) -> pd.DataFrame:
@@ -96,10 +99,31 @@ def retrieve_documents(vectorstore: langchain.vectorstores, query: str, **search
     return retriever.invoke(query)
 
 
+def execute_content_search(
+    content_query: str, paper_ids: List[str] = None
+) -> Tuple[List[Document], List[float]]:
+    embeddings_model = "bge-small"
+    persist_directory = get_local_data_path()
+    collection_name = "main_collection"
+
+    embeddings = FastEmbedEmbeddings(model_name=MODELS[embeddings_model]["model"])
+    client = ChromadbClient(
+        collection_name=collection_name, embedding_function=embeddings, persist_directory=persist_directory
+    )
+
+    if paper_ids:
+        results = client.similarity_search(content_query, filter={"paper_id": {"$in": paper_ids}})
+    else:
+        results = client.similarity_search(content_query)
+
+    docs, scores = zip(*results)
+
+    return docs, scores
+
+
 if __name__ == "__main__":
 
-    from giantsmind import get_metadata
-    from giantsmind import utils
+    from giantsmind import get_metadata, utils
 
     utils.set_env_vars()
 
@@ -112,10 +136,10 @@ if __name__ == "__main__":
 
     from langchain.vectorstores import Qdrant
     from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-    from giantsmind.vector_db import qdrant as gm_qdrant
 
     # from giantsmind import get_metadata
     from giantsmind import utils
+    from giantsmind.vector_db import qdrant as gm_qdrant
 
     utils.set_env_vars()
 
@@ -137,8 +161,8 @@ if __name__ == "__main__":
     result_docs = search_articles_with_similarity(qdrant, query, **search_kwargs)
     len(result_docs)
 
-    import tiktoken
     import qdrant
+    import tiktoken
 
     def num_tokens_from_string(string: str, encoding_name: str) -> int:
         encoding = tiktoken.get_encoding(encoding_name)
