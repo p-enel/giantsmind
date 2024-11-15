@@ -44,9 +44,9 @@ def parse_question(user_question: str) -> Dict[str, Optional[str]]:
     general_knowledge = parsed_response[2].replace("General Knowledge: ", "").strip()
 
     # Make sure the strings are replaced with None if the string is "None"
-    metadata_search = None if metadata_search == "None" else metadata_search
-    content_search = None if content_search == "None" else content_search
-    general_knowledge = None if general_knowledge == "None" else general_knowledge
+    metadata_search = None if metadata_search.lower().startswith("none") else metadata_search
+    content_search = None if content_search.lower().startswith("none") else content_search
+    general_knowledge = None if general_knowledge.lower().startswith("none") else general_knowledge
 
     return {
         "metadata_search": metadata_search,

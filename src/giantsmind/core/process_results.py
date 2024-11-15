@@ -15,10 +15,10 @@ def extract_paper_ids(metadata_results):
 def combine_docs(documents: List[Document], **kwargs) -> str:
     output = ["-" * 80]
     for doc in documents:
-        metadata_str = f"The following text is an excerpt of the article entitled '{doc.metadata['title']}' from author(s) {doc.metadata['authors']}. It was published in {doc.metadata['journal']} in (year-month-day) {doc.metadata['publication_date']}.\n\n\n"
+        metadata_str = f"The following text is an excerpt of the article entitled '{doc.metadata['title']}' from author(s) {doc.metadata['authors']}. It was published in {doc.metadata['journal']} in (year-month-day) {doc.metadata['publication_date']}. Paper ID: {doc.metadata['paper_id']}.\n\n<excerpt>"
         output.append(metadata_str)
         output.append(doc.page_content)
-        output.append("-" * 80)
+        output.append("</excerpt>\n" + "-" * 80)
     output.append("End of excerpts.")
     return "\n".join(output)
 
@@ -32,17 +32,18 @@ def format_metadata_results(metadata_results: List[Dict]) -> str:
         - "authors"
         - "publication_date"
         - "journal"
+        - "paper_id"
     """
     if not metadata_results:
         return "No metadata results found."
     formatted_txt = ""
     for result in metadata_results:
-        formatted_result = (
-            f"Title: {result['title']}\n"
-            f"Authors: {result['authors']}\n"
-            f"Publication Date: {result['publication_date']}\n"
-            f"Journal: {result['journal']}\n\n"
-        )
+        formatted_result = f"""Title: {result['title']}
+Authors: {result['authors']}
+Publication Date: {result['publication_date']}
+Journal: {result['journal']}
+Paper ID: {result['paper_id']}
+"""
         formatted_txt += formatted_result
     return formatted_txt
 
@@ -68,7 +69,7 @@ def aggregate_results(
     if content_results:
         content_str = f"# This question required content search for: {parsed_elements['content_search']}\n"
         content_str += "Here are the results:\n" + combine_docs(content_results)
-        aggregated_context += content_str
+        aggregated_context += content_str + "\n\n"
     if general_knowledge:
         aggregated_context += f"# General knowledge required: {parsed_elements['general_knowledge']}\n"
     return aggregated_context
