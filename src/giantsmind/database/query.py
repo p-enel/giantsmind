@@ -1,4 +1,7 @@
-from typing import List
+from dataclasses import dataclass
+from sqlite3 import Connection
+from typing import Any, Callable, List
+
 import Levenshtein
 from sqlalchemy import create_engine, event, text
 from sqlalchemy.engine import Engine
@@ -8,10 +11,6 @@ from sqlalchemy.sql import text as sql_txt
 from giantsmind.database.config import DATABASE_URL
 
 engine = create_engine(DATABASE_URL)
-
-
-def levenshtein(s1, s2):
-    return Levenshtein.distance(s1.lower(), s2.lower())
 
 
 def author_name_distance(db_name, query_name):
@@ -51,6 +50,57 @@ def string_match(conn, rec):
 @event.listens_for(engine, "connect")
 def author_match(conn, rec):
     conn.create_function("author_name_distance", 2, author_name_distance)
+
+
+@dataclass
+class DatabaseFunction:
+    """
+    Represents a custom database function configuration.
+
+    Attributes:
+        name: Name of the function as it will be used in SQL
+        num_params: Number of parameters the function accepts
+        func: The Python function to be registered
+    """
+
+    name: str
+    num_params: int
+    func: Callable[..., Any]
+
+
+# Custom functions
+levenshtein_func = DatabaseFunction(
+    "levenshtein",
+    2,
+    lambda s1, s2: Levenshtein.distance(s1.lower(), s2.lower()),
+)
+
+
+def connect_function_sqlite(connection: Connection, custom_functions: List[DatabaseFunction]) -> None:
+    """
+    Setup database connection with multiple custom functions.
+
+    Args:
+        connection: SQLite database connection
+        custom_functions: List of DatabaseFunction objects to register
+
+    Example:
+        custom_functions = [
+            DatabaseFunction(
+                name="levenshtein",
+                num_params=2,
+                func=levenshtein_function
+            ),
+            DatabaseFunction(
+                name="custom_concat",
+                num_params=3,
+                func=concat_function
+            )
+        ]
+        setup_database_connection(connection, custom_functions)
+    """
+    for func in custom_functions:
+        connection.create_function(func.name, func.num_params, func.func)
 
 
 def execute_query(query, engine: Engine = engine):
