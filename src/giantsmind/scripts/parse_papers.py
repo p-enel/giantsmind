@@ -1,7 +1,6 @@
 from itertools import chain
 from typing import Dict, List
 
-from langchain.vectorstores import Qdrant
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain_core.documents.base import Document
 
@@ -9,7 +8,6 @@ from giantsmind.core import get_metadata, parse_documents
 from giantsmind.database import paper_operations as paper_ops
 from giantsmind.utils import local, pdf_tools, utils
 from giantsmind.vector_db import base, prep_docs
-from giantsmind.vector_db import qdrant as gm_qdrant
 from giantsmind.vector_db import chroma_client
 
 PDF_FOLDER = "/home/pierre/Data/giants"
@@ -33,7 +31,7 @@ def add_paper_to_dbs(vc_client: base.VectorDBClient, paper_chunks: List[Document
 
 if __name__ == "__main__":
 
-    collection = "test"
+    collection = "main_collection"
     embeddings_model = "bge-small"
     persist_directory = local.get_local_data_path()
 
