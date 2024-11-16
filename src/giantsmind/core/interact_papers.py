@@ -152,3 +152,5 @@ if __name__ == "__main__":
     # 10. "VILA: Improving Structured Content Extraction from Scientific PDFs Using Visual Layout Groups"
 
     # ['doi:10.1038/nature12160', 'doi:10.1038/nature24270', 'doi:10.1038/s41467-017-00439-1', 'doi:10.1126/science.aar6404']
+
+    # How is mixed selectivity defined in the paper from Rigoti?

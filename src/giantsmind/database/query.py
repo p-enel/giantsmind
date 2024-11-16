@@ -1,106 +1,15 @@
-from dataclasses import dataclass
-from sqlite3 import Connection
-from typing import Any, Callable, List
+from typing import List
 
-import Levenshtein
-from sqlalchemy import create_engine, event, text
+from sqlalchemy import create_engine
+from sqlalchemy import text as sql_txt
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.sql import text as sql_txt
 
 from giantsmind.database.config import DATABASE_URL
+from giantsmind.database.database_functions import setup_db_functions
 
 engine = create_engine(DATABASE_URL)
-
-
-def author_name_distance(db_name, query_name):
-    db_name = db_name.lower()
-    query_name = query_name.lower()
-
-    db_parts = db_name.split()
-    query_parts = query_name.split()
-
-    if len(query_parts) == 1:
-        if len(db_parts) > 1:
-            return levenshtein(db_parts[1], query_name)
-        return levenshtein(db_name, query_name)
-
-    elif len(query_parts) == 2:
-        if len(db_parts) >= 2:
-            normal_order = levenshtein(db_parts[0], query_parts[0]) + levenshtein(
-                db_parts[-1], query_parts[1]
-            )
-            swapped_order = levenshtein(db_parts[0], query_parts[1]) + levenshtein(
-                db_parts[-1], query_parts[0]
-            )
-            return min(normal_order, swapped_order)
-        return min(
-            levenshtein(db_name, query_name),
-            levenshtein(db_name, f"{query_parts[1]} {query_parts[0]}"),
-        )
-
-    return levenshtein(db_name, query_name)
-
-
-@event.listens_for(engine, "connect")
-def string_match(conn, rec):
-    conn.create_function("levenshtein", 2, levenshtein)
-
-
-@event.listens_for(engine, "connect")
-def author_match(conn, rec):
-    conn.create_function("author_name_distance", 2, author_name_distance)
-
-
-@dataclass
-class DatabaseFunction:
-    """
-    Represents a custom database function configuration.
-
-    Attributes:
-        name: Name of the function as it will be used in SQL
-        num_params: Number of parameters the function accepts
-        func: The Python function to be registered
-    """
-
-    name: str
-    num_params: int
-    func: Callable[..., Any]
-
-
-# Custom functions
-levenshtein_func = DatabaseFunction(
-    "levenshtein",
-    2,
-    lambda s1, s2: Levenshtein.distance(s1.lower(), s2.lower()),
-)
-
-
-def connect_function_sqlite(connection: Connection, custom_functions: List[DatabaseFunction]) -> None:
-    """
-    Setup database connection with multiple custom functions.
-
-    Args:
-        connection: SQLite database connection
-        custom_functions: List of DatabaseFunction objects to register
-
-    Example:
-        custom_functions = [
-            DatabaseFunction(
-                name="levenshtein",
-                num_params=2,
-                func=levenshtein_function
-            ),
-            DatabaseFunction(
-                name="custom_concat",
-                num_params=3,
-                func=concat_function
-            )
-        ]
-        setup_database_connection(connection, custom_functions)
-    """
-    for func in custom_functions:
-        connection.create_function(func.name, func.num_params, func.func)
+setup_db_functions(engine)
 
 
 def execute_query(query, engine: Engine = engine):
@@ -134,7 +43,7 @@ if __name__ == "__main__":
 
     # Your SQL query as a string with fixed values
 
-    sql_query = text(
+    sql_query = sql_txt(
         """
         SELECT DISTINCT p.paper_id, p.title, p.publication_date, j.name AS journal_name,
                a1.name AS author1, a2.name AS author2
