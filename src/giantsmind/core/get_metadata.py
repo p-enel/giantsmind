@@ -13,6 +13,8 @@ import requests
 
 from giantsmind.utils import local, utils
 
+ATOM_NAMESPACE = "{http://www.w3.org/2005/Atom}"
+
 
 def extract_metadata_from_pdf(pdf_path: str, verbose: bool = False) -> dict:
     """Open the PDF file."""
@@ -155,21 +157,20 @@ def fetch_metadata_from_arxiv(arxiv_id: str, verbose: bool = False) -> dict:
         return {}
 
     root = ET.fromstring(response.content)
-    entry = root.find("{http://www.w3.org/2005/Atom}entry")
+    entry = root.find(f"{ATOM_NAMESPACE}entry")
 
     if entry is None:
         if verbose:
             print("No entry found for the given arXiv ID.")
         return {}
 
-    title = entry.find("{http://www.w3.org/2005/Atom}title").text.replace("\n", " ")
+    title = entry.find(f"{ATOM_NAMESPACE}title").text.replace("\n", " ")
     title = " ".join(title.split())
     authors = [
-        author.find("{http://www.w3.org/2005/Atom}name").text
-        for author in entry.findall("{http://www.w3.org/2005/Atom}author")
+        author.find(f"{ATOM_NAMESPACE}name").text for author in entry.findall(f"{ATOM_NAMESPACE}author")
     ]
-    url = entry.find("{http://www.w3.org/2005/Atom}id").text
-    published = entry.find("{http://www.w3.org/2005/Atom}published").text
+    url = entry.find(f"{ATOM_NAMESPACE}id").text
+    published = entry.find(f"{ATOM_NAMESPACE}published").text
     journal = "arXiv"  # arXiv papers typically don't have a journal, so we'll set it to 'arXiv'
 
     # Format the publication date to YYYY-MM-DD

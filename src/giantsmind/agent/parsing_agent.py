@@ -1,11 +1,12 @@
-from langchain_anthropic import ChatAnthropic
-from giantsmind.utils import utils
-from pathlib import Path
+from importlib import resources
 from typing import Dict, Optional
 
-utils.set_env_vars()
+from dotenv import load_dotenv
+from langchain_anthropic import ChatAnthropic
 
-PROMPT_PATH = Path(__file__).parent / "messages" / "parsing_prompt.txt"
+load_dotenv()
+
+PROMPT_PATH = resources.files("giantsmind.agent.resources.messages") / "parsing_prompt.txt"
 ERROR_MESSAGE = "Error:"  # Multiple content requests detected!"
 
 

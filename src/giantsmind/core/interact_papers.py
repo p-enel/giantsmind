@@ -7,7 +7,6 @@ from giantsmind.core import process_results as proc_res
 from giantsmind.core import search
 from giantsmind.utils.logging import logger
 
-
 # def main():
 logger.info("Starting main function")
 

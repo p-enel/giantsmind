@@ -1,6 +1,7 @@
 import textwrap
 from typing import List, Tuple
 
+from dotenv import load_dotenv
 from langchain.chains import RetrievalQA
 from langchain.chains.combine_documents.base import BaseCombineDocumentsChain
 from langchain.prompts import PromptTemplate
@@ -13,7 +14,8 @@ from langchain_core.output_parsers.string import StrOutputParser
 from langchain_core.runnables import chain
 from langchain_groq import ChatGroq
 from parse_documents import create_client
-from utils import set_env_vars
+
+load_dotenv()
 
 from giantsmind.core import process_results
 
@@ -128,7 +130,6 @@ if __name__ == "__main__":
 
     query = "What are properties of inter-day variations in brain functioning?"
 
-    set_env_vars()
     embeddings = FastEmbedEmbeddings(model_name=MODELS[embeddings_model]["model"])
     qdrant = Qdrant(create_client(), collection, embeddings)
     # qdrant.similarity_search_with_score(query)
