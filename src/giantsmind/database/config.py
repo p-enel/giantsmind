@@ -1,12 +1,12 @@
-from pathlib import Path
-from giantsmind.utils import local
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable
+
+from giantsmind.utils import local
 
 local_data_path = Path(local.get_local_data_path())
 local_data_path.mkdir(exist_ok=True)
 DATABASE_PATH = local_data_path / "papers.db"
-
 DATABASE_URL = f"sqlite:///{DATABASE_PATH}"
 
 

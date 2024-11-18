@@ -1,13 +1,12 @@
+from dotenv import load_dotenv
+from langchain.prompts import ChatPromptTemplate, PromptTemplate
 from langchain_community.tools import WikipediaQueryRun
 from langchain_community.utilities import WikipediaAPIWrapper
 from langchain_core.messages import HumanMessage, ToolMessage
-from langchain.prompts import PromptTemplate, ChatPromptTemplate
-from langchain_groq import ChatGroq
 from langchain_core.output_parsers.string import StrOutputParser
+from langchain_groq import ChatGroq
 
-from giantsmind.utils import utils
-
-utils.set_env_vars()
+load_dotenv()
 
 chat_with_wiki = ChatGroq(
     temperature=0,

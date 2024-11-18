@@ -63,9 +63,9 @@ def execute_content_search(
 
 if __name__ == "__main__":
 
-    from giantsmind import get_metadata, utils
+    from dotenv import load_dotenv
 
-    utils.set_env_vars()
+    load_dotenv()
 
     # metadata_df = get_metadata.load_metadata_df()
     # metadata_search = {"year": [">=:2021"], "journal": ["arxiv"], "author": ["kording"]}
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     from giantsmind import utils
     from giantsmind.vector_db import qdrant as gm_qdrant
 
-    utils.set_env_vars()
+    load_dotenv()
 
     collection = "test"
     embeddings_model = "bge-small"

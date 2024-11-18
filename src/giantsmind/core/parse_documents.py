@@ -9,10 +9,8 @@ from langchain_community.document_loaders import UnstructuredMarkdownLoader
 from langchain_core.documents.base import Document
 from llama_parse import LlamaParse
 
-from giantsmind.utils import utils, local
-from giantsmind.utils import pdf_tools
+from giantsmind.utils import local, pdf_tools, utils
 from giantsmind.vector_db import prep_docs
-
 
 MODELS = {"bge-small": {"model": "BAAI/bge-base-en-v1.5", "vector_size": 768}}
 PARSE_INSTRUCTIONS = """This is a scientific article. Please extract the text from the document and return it in markdown format."""
@@ -186,12 +184,14 @@ def parse_pdfs(
 
 
 if __name__ == "__main__":
-    utils.set_env_vars()
-
+    from dotenv import load_dotenv
     from langchain.vectorstores import Qdrant
     from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-    from giantsmind.vector_db import qdrant as gm_qdrant
+
     from giantsmind.core import get_metadata
+    from giantsmind.vector_db import qdrant as gm_qdrant
+
+    load_dotenv()
 
     collection = "test"
     embeddings_model = "bge-small"

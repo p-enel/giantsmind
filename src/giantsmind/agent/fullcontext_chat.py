@@ -1,12 +1,12 @@
+from importlib import resources
 from typing import Callable, Dict, Tuple
-from pathlib import Path
 
 from langchain_anthropic import ChatAnthropic
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import HumanMessage, SystemMessage
 
-from giantsmind.core.data_management import get_context_from_collection
 from giantsmind import agent
+from giantsmind.core.data_management import get_context_from_collection
 from giantsmind.utils import utils
 
 SYSTEM_MESSAGE_TEMPLATE = "<system> {sys_txt} </system>\n{paper_context}"
@@ -63,12 +63,13 @@ class ChatFullContext:
 
     @staticmethod
     def get_sys_msg_path(msg_name: str) -> str:
-        return Path(agent.__file__).parent / "messages" / msg_name
+        return resources.files("giantsmind.agent.resources.messages").joinpath(msg_name)
 
 
 if __name__ == "__main__":
+    from dotenv import load_dotenv
 
-    utils.set_env_vars()
+    load_dotenv()
 
     chat = ChatFullContext(
         sys_msg_name=DEFAULT_SYS_MSG_NAME,

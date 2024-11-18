@@ -1,5 +1,15 @@
+from dotenv import load_dotenv
+from langchain_anthropic import ChatAnthropic
+from langchain_core.messages import (
+    AIMessage,
+    FunctionMessage,
+    HumanMessage,
+    SystemMessage,
+    get_buffer_string,
+)
 from langchain_core.tools import tool
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, FunctionMessage, get_buffer_string
+
+load_dotenv()
 
 
 @tool
@@ -12,11 +22,6 @@ def multiply(ab: int, ba: int) -> int:
 print(multiply.name)
 print(multiply.description)
 print(multiply.args)
-
-from langchain_anthropic import ChatAnthropic
-from giantsmind.utils import utils
-
-utils.set_env_vars()
 
 model = ChatAnthropic(model="claude-3-5-sonnet-20240620")
 

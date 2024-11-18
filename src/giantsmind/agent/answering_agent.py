@@ -1,12 +1,11 @@
-from pathlib import Path
+import importlib.resources as resources
 
+from dotenv import load_dotenv
 from langchain_anthropic import ChatAnthropic
 
-from giantsmind.utils import utils
+load_dotenv()
 
-utils.set_env_vars()
-
-PROMPT_PATH = Path(__file__).parent / "messages" / "answering_prompt.txt"
+PROMPT_PATH = resources.files("giantsmind.agent.resources.messages").joinpath("answering_prompt.txt")
 
 
 def generate_answering_prompt(user_question: str, context: str) -> str:
