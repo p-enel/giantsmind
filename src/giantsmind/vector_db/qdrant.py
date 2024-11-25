@@ -5,11 +5,14 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Dict, List, Sequence, Tuple
 
+from dotenv import load_dotenv
 from langchain_core.documents.base import Document
 from qdrant_client import QdrantClient, models
 from qdrant_client.http.models import Distance, VectorParams
 
 from giantsmind.utils import local, utils
+
+load_dotenv()
 
 
 def get_year_from_metadata(year_metadata: List[str]) -> List[models.FieldCondition]:
@@ -119,7 +122,6 @@ def perform_similarity_search(qdrant, query, **query_args):
 
 def create_client() -> QdrantClient:
     """Create a Qdrant client from Qdrant cloud."""
-    utils.set_env_vars()
     client = QdrantClient(
         url=os.getenv("QDRANT_URL"),
         api_key=os.getenv("QDRANT_API_KEY"),

@@ -1,8 +1,9 @@
 from typing import Callable, Dict
 
-from context import Context
-from state import State, states
-from state_functions import (
+from .collection_operations import get_all_papers_collection
+from .context import Context
+from .state import State, states
+from .state_functions import (
     state_func_AFTER_SEARCH,
     state_func_EXIT,
     state_func_INTERACT_WITH_PAPERS,
@@ -10,7 +11,6 @@ from state_functions import (
     state_func_SEARCH_PAPERS,
     state_func_SELECT_PAPERS,
 )
-from collection_operations import get_all_papers_collection
 
 
 def main():

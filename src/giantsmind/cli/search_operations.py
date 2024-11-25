@@ -1,9 +1,11 @@
-from context import Context, CollectionId
-from state import states
-from giantsmind.agent.sql_agent import get_sql_query, execute_metadata_query
 from typing import List
-from giantsmind.database import collection_operations as col_ops
-from giantsmind.database import utils as db_utils
+
+from giantsmind.agents.sql import get_sql_query
+from giantsmind.cli.context import CollectionId, Context
+from giantsmind.cli.state import states
+from giantsmind.metadata_db import collection_operations as col_ops
+from giantsmind.metadata_db import utils as db_utils
+from giantsmind.metadata_db.query_executor import execute_metadata_query
 from giantsmind.utils.logging import logger
 
 

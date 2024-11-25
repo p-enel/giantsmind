@@ -1,6 +1,7 @@
 import logging
 import sys
 from pathlib import Path
+
 from giantsmind.utils.local import get_local_data_path
 
 

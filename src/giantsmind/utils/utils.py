@@ -1,44 +1,65 @@
-import os
-from pathlib import Path
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, List, Sequence, Tuple, TypeVar
 
-
-def set_env_vars():
-    env_file = Path(__file__).parent.parent.parent.parent / ".env"
-
-    if not env_file.exists():
-        raise Exception(".env file not found.")
-
-    for line in env_file.read_text().split("\n"):
-        if not line:
-            continue
-        key, value = line.split("=")
-        os.environ[key] = value
+T = TypeVar("T")
 
 
 def get_exist_absent(
-    list_: List[Any], func_exist: Callable[[List[Any]], bool]
-) -> Tuple[List[Any], List[int], List[Any], List[int]]:
-    exist_flags = func_exist(list_)
-    exist = [(i, elt) for i, (elt, exist) in enumerate(zip(list_, exist_flags)) if exist]
-    list_exist, index_exist = [], []
-    if len(exist) != 0:
-        index_exist, list_exist = zip(*exist)
+    items: List[T], predicate: Callable[[List[T]], List[bool]]
+) -> Tuple[List[T], List[int], List[T], List[int]]:
+    """
+    Split a list into existing and absent items based on a predicate function.
 
-    to_process = [(i, elt) for i, (elt, exist) in enumerate(zip(list_, exist_flags)) if not exist]
-    list_to_process, index_to_process = [], []
-    if len(to_process) != 0:
-        index_to_process, list_to_process = zip(*to_process)
+    Args:
+        items: Input list of items
+        predicate: Function that returns boolean flags for each item
 
-    return list_exist, index_exist, list_to_process, index_to_process
+    Returns:
+        Tuple of (existing items, existing indices, absent items, absent indices)
+    """
+    exist_flags = predicate(items)
+
+    # Get existing items and their indices
+    exists = [(i, item) for i, (item, flag) in enumerate(zip(items, exist_flags)) if flag]
+    exist_indices, exist_items = zip(*exists) if exists else ([], [])
+
+    # Get absent items and their indices in one pass
+    absents = [(i, item) for i, (item, flag) in enumerate(zip(items, exist_flags)) if not flag]
+    absent_indices, absent_items = zip(*absents) if absents else ([], [])
+
+    return list(exist_items), list(exist_indices), list(absent_items), list(absent_indices)
 
 
 def reorder_merge_lists(
-    docs1: List[Any], docs2: List[Any], index1: List[int], index2: List[int]
-) -> List[Any]:
-    docs_new = [None] * (len(docs1) + len(docs2))
-    for i, doc in zip(index1, docs1):
-        docs_new[i] = doc
-    for i, doc in zip(index2, docs2):
-        docs_new[i] = doc
-    return docs_new
+    docs1: Sequence[T], docs2: Sequence[T], index1: Sequence[int], index2: Sequence[int]
+) -> List[T]:
+    """
+    Merge two sequences into a new list based on provided target indices.
+
+    Args:
+        docs1: First sequence of items
+        docs2: Second sequence of items
+        index1: Target indices for items from docs1
+        index2: Target indices for items from docs2
+
+    Returns:
+        New list with merged items at specified positions
+
+    Raises:
+        ValueError: If indices are invalid or overlapping
+    """
+    if len(docs1) != len(index1) or len(docs2) != len(index2):
+        raise ValueError("Length mismatch between docs and indices")
+
+    if set(index1) & set(index2):
+        raise ValueError("Overlapping indices detected")
+
+    result_size = max(max(index1, default=-1), max(index2, default=-1)) + 1
+    result = [None] * result_size
+
+    # Use dictionary comprehension for more efficient assignment
+    updates = {**{i: doc for i, doc in zip(index1, docs1)}, **{i: doc for i, doc in zip(index2, docs2)}}
+
+    for i, doc in updates.items():
+        result[i] = doc
+
+    return result

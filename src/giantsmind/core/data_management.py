@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Dict, List
 
+from giantsmind.metadata_db import collection_operations as col_ops
 from giantsmind.utils import local
-from giantsmind.database import collection_operations as col_ops
 
 
 def load_markdown_paper(file_path: str) -> str:
