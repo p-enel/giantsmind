@@ -1,11 +1,11 @@
 from typing import List, Tuple
 
-from context import CollectionId, Context
-from state import states
-
-from giantsmind.cli import helpers as cli_helpers
-from giantsmind.database import collection_operations as col_ops
+from giantsmind.metadata_db import collection_operations as col_ops
 from giantsmind.utils.logging import logger
+
+from . import helpers as cli_helpers
+from .context import CollectionId, Context
+from .state import states
 
 
 def _select_papers(collection_id: CollectionId, keep: bool) -> CollectionId:
