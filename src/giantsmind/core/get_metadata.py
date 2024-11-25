@@ -426,9 +426,12 @@ def process_metadata(pdf_paths: Sequence[str], verbose: bool = True) -> List[dic
     pdf_paths_exist, index_exist, pdf_paths_to_process, index_to_process = utils.get_exist_absent(
         pdf_paths, check_metadatas_exist
     )
-    metadatas = fetch_and_process_metadata(pdf_paths_to_process, verbose)
-    metadatas = add_file_path_to_metadata(metadatas, pdf_paths_to_process)
-    save_metadatas_to_json(metadatas, pdf_paths_to_process)
-    metadatas_existing = [_load_metadata_json(pdf_path) for pdf_path in pdf_paths_exist]
+    metadatas = []
+    if pdf_paths_to_process:
+        metadatas = fetch_and_process_metadata(pdf_paths_to_process, verbose)
+        metadatas = add_file_path_to_metadata(metadatas, pdf_paths_to_process)
+        save_metadatas_to_json(metadatas, pdf_paths_to_process)
+    if pdf_paths_exist:
+        metadatas_existing = [_load_metadata_json(pdf_path) for pdf_path in pdf_paths_exist]
     metadatas = utils.reorder_merge_lists(metadatas_existing, metadatas, index_exist, index_to_process)
     return metadatas
