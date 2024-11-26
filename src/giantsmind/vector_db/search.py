@@ -47,7 +47,9 @@ def create_vectorstore_client(
     collection_name: str, embeddings: FastEmbedEmbeddings, persist_directory: Path
 ) -> ChromadbClient:
     return ChromadbClient(
-        collection_name=collection_name, embedding_function=embeddings, persist_directory=persist_directory
+        collection_name=collection_name,
+        embedding_function=embeddings,
+        persist_directory=str(persist_directory),
     )
 
 
@@ -78,58 +80,6 @@ def execute_content_search(
     docs, scores = perform_similarity_search(client, content_query, paper_ids)
 
     return list(docs), list(scores)
-
-
-if __name__ == "__main__":
-
-    from dotenv import load_dotenv
-
-    load_dotenv()
-
-    # metadata_df = get_metadata.load_metadata_df()
-    # metadata_search = {"year": [">=:2021"], "journal": ["arxiv"], "author": ["kording"]}
-    # metadata_search = {"author": ["kording"]}
-    # search_for_articles_metadata(metadata_df, metadata_search)
-
-    ############################################
-
-    from langchain.vectorstores import Qdrant
-    from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-
-    # from giantsmind import get_metadata
-    from giantsmind import utils
-    from giantsmind.vector_db import qdrant as gm_qdrant
-
-    load_dotenv()
-
-    collection = "test"
-    embeddings_model = "bge-small"
-    pdf_folder = "/home/pierre/Data/giants"
-    MODELS = {"bge-small": {"model": "BAAI/bge-base-en-v1.5", "vector_size": 768}}
-
-    embeddings = FastEmbedEmbeddings(model_name=MODELS[embeddings_model]["model"])
-    client = gm_qdrant.setup_database_and_collection(
-        collection, MODELS[embeddings_model]["vector_size"], embeddings_model
-    )
-
-    qdrant = Qdrant(client, collection, embeddings)
-
-    query = "mixed selectitivity in the prefrontal cortex"
-    query = "What are properties of inter-day variations in brain functioning?"
-    search_kwargs = {"k": 5}
-    result_docs = search_articles_with_similarity(qdrant, query, **search_kwargs)
-    len(result_docs)
-
-    import qdrant
-    import tiktoken
-
-    def num_tokens_from_string(string: str, encoding_name: str) -> int:
-        encoding = tiktoken.get_encoding(encoding_name)
-        num_tokens = len(encoding.encode(string))
-        return num_tokens
-
-    paper_id = "doi:10.1038/nature12160"
-    text = gm_qdrant.get_text_from_article(client, collection, paper_id)
 
 
 # def get_matching_publication_dates(metadata_df: pd.DataFrame, publication_dates: List[str]) -> pd.DataFrame:

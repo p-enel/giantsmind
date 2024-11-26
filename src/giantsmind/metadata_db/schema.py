@@ -3,11 +3,11 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 from giantsmind.metadata_db.config import DEFAULT_DATABASE_URL
+from giantsmind.utils.local import get_local_data_path
 from giantsmind.utils.logging import logger
 
-engine: Engine = create_engine(DEFAULT_DATABASE_URL)
-
 Base = declarative_base()
+engine: Engine = create_engine(DEFAULT_DATABASE_URL)
 
 paper_collection_association = Table(
     "paper_collection",
@@ -71,6 +71,12 @@ def init_db():
     logger.info("Database and tables created successfully and saved to disk as 'papers.db'.")
 
 
-def get_session():
-    Session = sessionmaker(bind=engine)
-    return Session()
+# def get_session():
+#     Session = sessionmaker(bind=engine)
+#     return Session()
+
+if (get_local_data_path() / "papers.db").exists():
+    logger.info("Database already exists. Skipping database initialization.")
+else:
+    init_db()
+    logger.info("Database initialized successfully.")
