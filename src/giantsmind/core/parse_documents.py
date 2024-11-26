@@ -1,7 +1,6 @@
 import asyncio
 import os
 import traceback
-from itertools import chain
 from pathlib import Path
 from typing import List, Sequence
 
@@ -10,8 +9,7 @@ from langchain_core.documents.base import Document as LangchainDocument
 from llama_parse import LlamaParse
 from llama_parse.base import Document as LlamaDocument
 
-from giantsmind.utils import local, pdf_tools, utils
-from giantsmind.vector_db import prep_docs
+from giantsmind.utils import local, utils
 
 MODELS = {"bge-small": {"model": "BAAI/bge-base-en-v1.5", "vector_size": 768}}
 PARSE_INSTRUCTIONS = """Extract the text from this scientific article and return it in markdown format without delimiters. Do not add any text to the document."""
@@ -184,46 +182,3 @@ def parse_pdfs(
     langchain_docs = load_parsed_documents_with_pdf_path(pdf_paths)
     # langchain_docs = utils.reorder_merge_lists(parsed_docs, parsed_docs_existing, index_to_process, index_exist)
     return langchain_docs
-
-
-if __name__ == "__main__":
-    from dotenv import load_dotenv
-    from langchain.vectorstores import Qdrant
-    from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
-
-    from giantsmind.core import get_metadata
-    from giantsmind.vector_db import qdrant as gm_qdrant
-
-    load_dotenv()
-
-    collection = "test"
-    embeddings_model = "bge-small"
-    pdf_folder = "/home/pierre/Data/giants"
-
-    embeddings = FastEmbedEmbeddings(model_name=MODELS[embeddings_model]["model"])
-    client = gm_qdrant.setup_database_and_collection(
-        collection, MODELS[embeddings_model]["vector_size"], embeddings_model
-    )
-
-    unproc_hashes, unproc_files = gm_qdrant.get_unprocessed_pdf_files(
-        client, collection, pdf_tools.get_pdf_paths(pdf_folder)
-    )
-
-    pdf_files = pdf_tools.get_pdf_paths(pdf_folder)
-
-    if len(unproc_files) == 0:
-        print("All files have already been processed.")
-        exit()
-
-    metadatas = get_metadata.process_metadata(pdf_files)
-    payload_files = gm_qdrant.process_and_save_payloads(metadatas, unproc_files)
-
-    parsed_docs = parse_pdfs(unproc_files)
-    chunked_docs = prep_docs.chunk_pdfs(parsed_docs)
-    chunked_docs_with_payload = gm_qdrant.load_payloads_and_update_chunked_documents(
-        chunked_docs, payload_files
-    )
-    chunked_docs_with_payload = list(chain(*chunked_docs_with_payload))
-
-    qdrant = Qdrant(client, collection, embeddings)
-    qdrant.add_documents(chunked_docs_with_payload)
