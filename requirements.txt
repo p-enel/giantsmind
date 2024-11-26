@@ -1,6 +1,11 @@
-langchain_qdrant
-easyocr
-tensorboardx
-transformers
 python-dotenv>=0.19.0
+langchain
+langchain_community
+langchain_chroma
+llama_parse
 platformdirs
+chromadb
+sqlalchemy
+pymupdf
+PyPDF2
+requests

@@ -1,6 +1,6 @@
 from typing import Any, List, Tuple
 
-from langchain.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_core.documents.base import Document
 
 from giantsmind.vector_db.base import VectorDBClient

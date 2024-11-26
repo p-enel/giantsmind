@@ -407,7 +407,9 @@ def add_file_path_to_metadata(metadatas: List[dict], pdf_paths: List[str]) -> Li
 def _save_metadata_to_json(metadata: dict, pdf_path: str):
     fname = Path(pdf_path).name
     metadata_fname = Path(fname).with_suffix(".json")
-    metadata_path = Path(local.get_local_data_path()) / "parsed_docs" / metadata_fname
+    metadata_folder = Path(local.get_local_data_path()) / "parsed_docs"
+    metadata_folder.mkdir(parents=True, exist_ok=True)
+    metadata_path = metadata_folder / metadata_fname
     with metadata_path.open("w") as f:
         json.dump(metadata, f, indent=4)
 
@@ -427,6 +429,7 @@ def process_metadata(pdf_paths: Sequence[str], verbose: bool = True) -> List[dic
         pdf_paths, check_metadatas_exist
     )
     metadatas = []
+    metadatas_existing = []
     if pdf_paths_to_process:
         metadatas = fetch_and_process_metadata(pdf_paths_to_process, verbose)
         metadatas = add_file_path_to_metadata(metadatas, pdf_paths_to_process)

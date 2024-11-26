@@ -110,7 +110,7 @@ def content_search(
 ) -> Tuple[List[Document], List[float]]:
     paper_ids = proc_res.extract_paper_ids(metadata_results)
     logger.info(f"Paper IDs: {paper_ids}")
-    content_results, content_scores = search.execute_content_search(content_search, paper_ids)
+    content_results, content_scores = search.execute_content_search(content_search, paper_ids=paper_ids)
     logger.info(f"Content results: {content_results}")
     logger.info(f"Content scores: {content_scores}")
     return content_results, content_scores
@@ -130,15 +130,9 @@ def print_results(final_answer: str) -> None:
 
 
 def one_question_chain(collection_id: int) -> None:
-    # user_question, parsed_elements = prompt_question()
-    user_question = "What papers published after 2000 are about mixed selectivity?"
-    parsed_elements = {
-        "metadata_search": "Retrieve papers published after 2000",
-        "content_search": "mixed selectivity",
-        "general_knowledge": None,
-    }
-    results: SearchResults = {}
+    user_question, parsed_elements = prompt_question()
 
+    results: SearchResults = {}
     if parsed_elements.get("metadata_search"):
         results["metadata"] = get_metadata(parsed_elements["metadata_search"], collection_id)
 
@@ -160,22 +154,3 @@ def one_question_chain(collection_id: int) -> None:
 
 if __name__ == "__main__":
     one_question_chain(1)
-    # What is the subject of articles published after 2020?
-    # Give me a list of the 10 first papers in the database.
-    # How is a microstate defined in the papers in the database?
-    # From all the papers in the database find how is defined microstate (in the context of neuroscience).
-
-    # 1. "To reverse engineer an entire nervous system"
-    # 2. "Data-Efficient Multimodal Fusion on a Single GPU"
-    # 3. "LLM2Vec: Large Language Models Are Secretly Powerful Text Encoders"
-    # 4. "Personality Moderates Intra-Individual Variability in EEG Microstates and Spontaneous Thoughts"
-    # 5. "Spontaneous thought and microstate activity modulation by social imitation"
-    # 6. "The importance of mixed selectivity in complex cognitive tasks"
-    # 7. "Mastering the game of Go without human knowledge"
-    # 8. "Biosynthesis of the nosiheptide indole side ring centers on a cryptic carrier protein NosJ"
-    # 9. "A general reinforcement learning algorithm that masters chess, shogi, and Go through self-play"
-    # 10. "VILA: Improving Structured Content Extraction from Scientific PDFs Using Visual Layout Groups"
-
-    # ['doi:10.1038/nature12160', 'doi:10.1038/nature24270', 'doi:10.1038/s41467-017-00439-1', 'doi:10.1126/science.aar6404']
-
-    # How is mixed selectivity defined in the paper from Rigoti?

@@ -1,50 +1,39 @@
 #!/usr/bin/env python3
 import argparse
+import os
 import sys
 from typing import List, Optional
 
-from giantsmind.core.interact_papers import one_question_chain
+from giantsmind.scripts.interact_papers import one_question_chain
+from giantsmind.scripts.parse_papers import parse_papers
 from giantsmind.utils.logging import logger
 
 
 def parse_arguments(args: Optional[List[str]] = None) -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description="GiantsMind CLI")
-    # parser.add_argument("--debug", action="store_true", help="Enable debug logging")
+    parser.add_argument(
+        "--parse",
+        metavar="PDF_PATH",
+        help="Parse PDFs from the specified folder path",
+        nargs="?",
+        const=os.getenv("DEFAULT_PDF_PATH"),
+    )
 
-    return parser.parse_args(args)
+    args = parser.parse_args(args)
+    return args
 
 
 def main(args: Optional[List[str]] = None) -> int:
-    """
-    Main entry point for the application.
-
-    Args:
-        args: List of command line arguments. Defaults to sys.argv[1:] if None.
-
-    Returns:
-        int: Exit code (0 for success, non-zero for error)
-    """
-    # Parse command line arguments
+    """Main entry point for the application."""
     parsed_args = parse_arguments(args)
 
     try:
-        logger.info("Starting application...")
-
-        # Your application logic goes here
-        # logger.debug(f"Using configuration file: {parsed_args.config}")
-
-        # Example: Load configuration
-        # config = load_config(parsed_args.config)
-
-        # Example: Initialize your application
-        # app = Application(config)
-        # app.run()
-
-        one_question_chain(1)
-
-        logger.info("Application completed successfully")
-        return 0
+        if parsed_args.parse is not None:
+            return parse_papers(parsed_args.parse)
+        else:
+            one_question_chain(1)
+            return 0
 
     except Exception as e:
         logger.exception("An error occurred:")
@@ -52,5 +41,4 @@ def main(args: Optional[List[str]] = None) -> int:
 
 
 if __name__ == "__main__":
-    # The following line allows the script to be both imported and run directly
     sys.exit(main())

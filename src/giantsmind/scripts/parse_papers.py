@@ -1,5 +1,3 @@
-import argparse
-import os
 from pathlib import Path
 from typing import Dict, List
 
@@ -19,26 +17,6 @@ DEFAULT_COLLECTION = "main_collection"
 EMBEDDINGS_MODEL = "bge-small"
 
 load_dotenv()
-
-
-def parse_arguments() -> argparse.Namespace:
-    """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="GiantsMind PDF parser.")
-    parser.add_argument(
-        "pdfspath",
-        nargs="?",
-        default=os.getenv("DEFAULT_PDF_PATH", None),
-        help="The path to the folder containing the PDFs to parse.",
-    )
-
-    args = parser.parse_args()
-    if not args.pdfspath:
-        parser.error(
-            "No default PDF folder provided. Please provide the path to the folder "
-            "containing the PDFs to parse or set the DEFAULT_PDF_PATH environment variable."
-        )
-
-    return args
 
 
 def add_paper_to_dbs(vc_client: base.VectorDBClient, paper_chunks: List[Document], metadata: Dict[str, str]):
@@ -93,9 +71,11 @@ def process_database_operations(parsed_docs: List[Document], metadatas: List[Dic
         ids = [metadata["paper_id"] for metadata in metadatas]
 
         logger.info("Checking for existing papers in database")
-        embeddings = FastEmbedEmbeddings(model_name=MODELS[EMBEDDINGS_MODEL]["model"])
+        embeddings = FastEmbedEmbeddings(
+            model_name=MODELS[EMBEDDINGS_MODEL]["model"], cache_dir=str(persist_directory)
+        )
         client = chroma_client.ChromadbClient(
-            DEFAULT_COLLECTION, embeddings, persist_directory=persist_directory
+            DEFAULT_COLLECTION, embeddings, persist_directory=str(persist_directory)
         )
         index_to_process = utils.get_exist_absent(ids, lambda ids: client.check_ids_exist(ids))[-1]
 
@@ -133,27 +113,25 @@ def process_papers(
         logger.warning(f"Failed to process {len(failed_papers)} papers: {', '.join(failed_papers)}")
 
 
-def main():
+def parse_papers(pdf_path: str) -> int:
+    """Handle PDF parsing operation."""
     try:
         logger.info("Starting PDF parsing process")
-        args = parse_arguments()
-
-        pdf_paths = setup_pdf_processing(Path(args.pdfspath))
+        pdf_paths = setup_pdf_processing(Path(pdf_path))
         if not pdf_paths:
-            return
+            return 1
 
         parsed_docs, metadatas = process_documents(pdf_paths)
         process_database_operations(parsed_docs, metadatas, local.get_local_data_path())
 
         logger.info("PDF parsing and database update completed")
+        return 0
     except Exception as e:
-        logger.error(f"Critical error in main process: {str(e)}")
-        raise
+        logger.error(f"Critical error in parsing process: {str(e)}")
+        return 1
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception as e:
-        logger.error(f"Script terminated with error: {str(e)}")
-        raise
+    import os
+
+    parse_papers(os.getenv("DEFAULT_PDF_PATH"))
