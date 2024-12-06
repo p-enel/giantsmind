@@ -1,9 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 from sqlite3 import Connection
-from typing import Any, Callable, List, Protocol
-
-from typing_extensions import Self
+from typing import Any, Callable, List, Protocol, Tuple
 
 
 class DatabaseConnection(Protocol):
@@ -34,3 +32,17 @@ class DatabaseFunction:
 class DatabaseConfig:
     path: Path
     db_functions: List[DatabaseFunction]
+
+
+@dataclass
+class Metadata:
+    title: str
+    authors: Tuple[str]
+    url: str
+    journal: str
+    publication_date: str
+    paper_id: str
+    file_path: str | None = None
+
+    def to_dict(self) -> dict:
+        return self.__dict__

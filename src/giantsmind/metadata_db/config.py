@@ -8,3 +8,4 @@ local_data_path = Path(local.get_local_data_path())
 local_data_path.mkdir(exist_ok=True)
 DEFAULT_DATABASE_PATH = Path(local_data_path / "papers.db")
 DEFAULT_DATABASE_URL = f"sqlite:///{DEFAULT_DATABASE_PATH}"
+DEFAULT_COLLECTION = "all papers"

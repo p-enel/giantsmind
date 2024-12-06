@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import langchain.vectorstores
+from langchain_community.document_compressors import FlashrankRerank
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain_core.documents.base import Document
 
@@ -54,15 +55,22 @@ def create_vectorstore_client(
 
 
 def perform_similarity_search(
-    client: ChromadbClient, query: str, paper_ids: Optional[List[str]] = None
+    client: ChromadbClient, query: str, paper_ids: Optional[List[str]] = None, n_results: int = 20
 ) -> Tuple[List[Document], List[float]]:
     if paper_ids:
         if not client.check_ids_exist(paper_ids):
             raise ValueError("Some paper IDs do not exist in the database.")
-        results = client.similarity_search(query, filter={"paper_id": {"$in": paper_ids}})
+        results = client.similarity_search(query, filter={"paper_id": {"$in": paper_ids}}, k=n_results)
     else:
-        results = client.similarity_search(query)
+        results = client.similarity_search(query, k=n_results)
     return zip(*results)
+
+
+def flash_rerank_docs(docs: List[Document], query: str) -> List[Document]:
+    compressor = FlashrankRerank(model="ms-marco-MiniLM-L-12-v2", score_threshold=0.5, top_n=10)
+    docs_reranked = compressor.compress_documents(docs, query)
+
+    return docs_reranked
 
 
 def execute_content_search(
@@ -71,15 +79,16 @@ def execute_content_search(
     collection_name: str = "main_collection",
     paper_ids: Optional[List[str]] = None,
     persist_directory: Optional[Path] = None,
-) -> Tuple[List[Document], List[float]]:
+) -> List[Document]:
     if persist_directory is None:
         persist_directory = get_local_data_path()
 
     embeddings = create_embeddings(embeddings_model)
     client = create_vectorstore_client(collection_name, embeddings, persist_directory)
-    docs, scores = perform_similarity_search(client, content_query, paper_ids)
+    docs, _ = perform_similarity_search(client, content_query, paper_ids, n_results=100)
+    docs_reranked = flash_rerank_docs(docs, content_query)
 
-    return list(docs), list(scores)
+    return list(docs_reranked)
 
 
 # def get_matching_publication_dates(metadata_df: pd.DataFrame, publication_dates: List[str]) -> pd.DataFrame:
