@@ -6,8 +6,8 @@ from sqlalchemy import and_
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from giantsmind.metadata_db import collection_operations as col_ops
-from giantsmind.metadata_db import paper_operations as paper_ops
+from giantsmind.metadata_db.operations import collection_operations as col_ops
+from giantsmind.metadata_db.operations import paper_operations as paper_ops
 from giantsmind.metadata_db.schema import Author, Journal, Paper, engine
 from giantsmind.utils.logging import logger
 

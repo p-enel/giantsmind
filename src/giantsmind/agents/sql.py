@@ -18,6 +18,7 @@ from giantsmind.metadata_db import config as db_cfg_module
 from giantsmind.metadata_db import database_functions as db_functions
 from giantsmind.metadata_db.db_connection import SQLiteConnection
 from giantsmind.metadata_db.models import DatabaseConfig, DatabaseConnection
+from giantsmind.metadata_db.operations import collection_operations as col_ops
 from giantsmind.metadata_db.query_executor import QueryExecutor
 from giantsmind.utils.logging import logger
 
@@ -148,7 +149,7 @@ def get_sql_query(
     schema_provider: Callable[[], str] = _get_sql_schema,
     message_creator: Callable[[str, int], SystemMessage] = _sql_sys_msg,
     query_generator: Callable[[List[BaseMessage]], str] = _query_generator,
-    collection_id: int = 1,
+    collection_name: str = db_cfg_module.DEFAULT_COLLECTION,
 ) -> str:
     """Generate SQL query from user message using LLM.
 
@@ -170,9 +171,10 @@ def get_sql_query(
     if not isinstance(user_message, str) or not user_message.strip():
         raise ValueError("user_message must be non-empty string")
 
-    if not isinstance(collection_id, int) or collection_id < 0:
+    if not isinstance(collection_name, str):
         raise ValueError("collection_id must be non-negative integer")
 
+    collection_id = col_ops.get_collection_id(collection_name)
     try:
         schema = schema_provider()
         system_sql = message_creator(schema, collection_id)

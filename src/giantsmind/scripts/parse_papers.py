@@ -6,6 +6,8 @@ from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain_core.documents.base import Document
 
 from giantsmind.core import get_metadata, parse_documents
+from giantsmind.metadata_db.models import Metadata
+from giantsmind.metadata_db.operations import collection_operations as col_ops
 from giantsmind.metadata_db.operations import paper_operations as paper_ops
 from giantsmind.utils import local, pdf_tools, utils
 from giantsmind.utils.logging import logger
@@ -19,17 +21,20 @@ EMBEDDINGS_MODEL = "bge-small"
 load_dotenv()
 
 
-def add_paper_to_dbs(vc_client: base.VectorDBClient, paper_chunks: List[Document], metadata: Dict[str, str]):
+def add_paper_to_dbs(vc_client: base.VectorDBClient, paper_chunks: List[Document], metadata: Metadata):
     """Add a paper to the databases."""
     try:
         n_chunks = len(paper_chunks)
         ids = vc_client.add_documents(paper_chunks)
         if len(ids) != n_chunks:
             raise ValueError(f"Expected {n_chunks} IDs, got {len(ids)}")
-        metadata["chunks"] = ids
-        paper_ops.add_papers([metadata])
+        metadata_dict = metadata.to_dict().copy()
+        metadata_dict["chunks"] = tuple(ids)
+        paper_ops.add_papers([metadata_dict])[0]
+        collection_id = col_ops.get_all_papers_collectionid()
+        col_ops.add_paper_to_collection(metadata.paper_id, collection_id)
     except Exception as e:
-        logger.error(f"Failed to add paper '{metadata.get('title', 'Unknown')}' to databases: {str(e)}")
+        logger.error(f"Failed to add paper '{metadata.title}' to databases: {str(e)}")
         raise
 
 
@@ -48,7 +53,7 @@ def setup_pdf_processing(pdf_folder: Path) -> List[Path]:
     return pdf_paths
 
 
-def process_documents(pdf_paths: List[Path]) -> tuple[List[Document], List[Dict]]:
+def process_documents(pdf_paths: List[Path]) -> tuple[List[Document], List[Metadata]]:
     """Process PDF documents and extract metadata."""
     try:
         logger.info("Processing metadata and parsing documents")
@@ -56,8 +61,10 @@ def process_documents(pdf_paths: List[Path]) -> tuple[List[Document], List[Dict]
         parsed_docs = parse_documents.parse_pdfs(pdf_paths)
 
         for doc, metadata in zip(parsed_docs, metadatas):
-            metadata["authors"] = "; ".join(metadata["authors"])
-            doc.metadata = metadata
+
+            metadata_dict = metadata.to_dict().copy()
+            metadata_dict["authors"] = "; ".join(metadata_dict["authors"])
+            doc.metadata = metadata_dict
 
         return parsed_docs, metadatas
     except Exception as e:
@@ -65,10 +72,12 @@ def process_documents(pdf_paths: List[Path]) -> tuple[List[Document], List[Dict]
         raise
 
 
-def process_database_operations(parsed_docs: List[Document], metadatas: List[Dict], persist_directory: Path):
+def process_database_operations(
+    parsed_docs: List[Document], metadatas: List[Metadata], persist_directory: Path
+):
     """Handle database operations for document processing."""
     try:
-        ids = [metadata["paper_id"] for metadata in metadatas]
+        ids = [metadata.paper_id for metadata in metadatas]
 
         logger.info("Checking for existing papers in database")
         embeddings = FastEmbedEmbeddings(
@@ -96,17 +105,17 @@ def process_database_operations(parsed_docs: List[Document], metadatas: List[Dic
 
 
 def process_papers(
-    client: base.VectorDBClient, chunked_docs: List[List[Document]], metadatas_to_db: List[Dict]
+    client: base.VectorDBClient, chunked_docs: List[List[Document]], metadatas_to_db: List[Metadata]
 ):
     """Process individual papers and add them to the database."""
     failed_papers = []
     for i, (paper_chunks, metadata) in enumerate(zip(chunked_docs, metadatas_to_db), 1):
         try:
-            logger.info(f"Processing paper {i}/{len(chunked_docs)}: {metadata.get('title', 'Unknown title')}")
+            logger.info(f"Processing paper {i}/{len(chunked_docs)}: {metadata.title}")
             add_paper_to_dbs(client, paper_chunks, metadata)
         except Exception as e:
-            logger.error(f"Failed to process paper {metadata.get('title', 'Unknown')}: {str(e)}")
-            failed_papers.append(metadata.get("title", "Unknown"))
+            logger.error(f"Failed to process paper {metadata.title}: {str(e)}")
+            failed_papers.append(metadata.title)
             continue
 
     if failed_papers:

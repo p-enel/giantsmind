@@ -3,8 +3,8 @@ from typing import Callable, List, Tuple
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
-from giantsmind.metadata_db import paper_operations as paper_ops
 from giantsmind.metadata_db import utils as db_utils
+from giantsmind.metadata_db.operations import paper_operations as paper_ops
 from giantsmind.metadata_db.schema import Collection, Paper, engine
 from giantsmind.utils.logging import logger
 
@@ -58,7 +58,7 @@ def _create_collection(
     core_func: Callable[[Session, str, List[Paper]], Collection] = _create_collection_core,
 ) -> Collection:
     # Fetch collection with same name if exists
-    collection = core_func(session, name)
+    collection = _get_collection_from_name(session, name)
     name_tmp = None
     if collection:  # If collection with same name exists
         if not overwrite:

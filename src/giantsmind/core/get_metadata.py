@@ -11,6 +11,7 @@ import fitz
 import PyPDF2
 import requests
 
+from giantsmind.metadata_db.models import Metadata
 from giantsmind.utils import local, utils
 
 ATOM_NAMESPACE = "{http://www.w3.org/2005/Atom}"
@@ -419,7 +420,33 @@ def save_metadatas_to_json(metadatas: List[dict], pdf_paths: List[str]):
         _save_metadata_to_json(metadata, pdf_path)
 
 
-def process_metadata(pdf_paths: Sequence[str], verbose: bool = True) -> List[dict]:
+def convert_metadata_to_dataclass(metadatas: List[dict]) -> List[Metadata]:
+    metadata_objects = []
+    for metadata in metadatas:
+        try:
+            authors = metadata.get("authors", "")
+            if isinstance(authors, str):
+                authors = authors.split(";")
+            if not authors:
+                raise ValueError("Missing mandatory field: authors")
+            metadata_obj = Metadata(
+                title=metadata["title"],
+                authors=tuple(authors),
+                journal=metadata["journal"],
+                publication_date=metadata["publication_date"],
+                paper_id=metadata["paper_id"],
+                url=metadata["url"],
+                file_path=metadata["file_path"],
+            )
+            metadata_objects.append(metadata_obj)
+        except KeyError as e:
+            print(f"Missing mandatory field: {e}")
+        except Exception as e:
+            print(f"Error converting metadata: {metadata}. Error: {e}")
+    return metadata_objects
+
+
+def process_metadata(pdf_paths: Sequence[str], verbose: bool = True) -> List[Metadata]:
     """Get and save metadata for a list of files."""
     if not pdf_paths and verbose:
         print("No files to process.")
@@ -437,4 +464,6 @@ def process_metadata(pdf_paths: Sequence[str], verbose: bool = True) -> List[dic
     if pdf_paths_exist:
         metadatas_existing = [_load_metadata_json(pdf_path) for pdf_path in pdf_paths_exist]
     metadatas = utils.reorder_merge_lists(metadatas_existing, metadatas, index_exist, index_to_process)
-    return metadatas
+    metadata_objs = convert_metadata_to_dataclass(metadatas)
+
+    return metadata_objs

@@ -93,9 +93,9 @@ def handle_user_modifications(parsed_elements: ParsedElements) -> ParsedElements
     return parsed_elements
 
 
-def get_metadata(metadata_query: str, collection_id: int) -> List[MetadataResult]:
+def get_metadata(metadata_query: str, collection_name: str) -> List[MetadataResult]:
     print("Generate SQL query...  ", end="", flush=True)
-    sql_query = sql.get_sql_query(metadata_query, collection_id=collection_id)
+    sql_query = sql.get_sql_query(metadata_query, collection_name=collection_name)
     print("done.")
     logger.info(f"SQL query: {sql_query}")
 
@@ -110,10 +110,9 @@ def content_search(
 ) -> Tuple[List[Document], List[float]]:
     paper_ids = proc_res.extract_paper_ids(metadata_results)
     logger.info(f"Paper IDs: {paper_ids}")
-    content_results, content_scores = search.execute_content_search(content_search, paper_ids=paper_ids)
+    content_results = search.execute_content_search(content_search, paper_ids=paper_ids)
     logger.info(f"Content results: {content_results}")
-    logger.info(f"Content scores: {content_scores}")
-    return content_results, content_scores
+    return content_results
 
 
 def answer_question(user_question: str, aggregated_context: str) -> str:
@@ -129,17 +128,15 @@ def print_results(final_answer: str) -> None:
     print(f"Answer: {final_answer}")
 
 
-def one_question_chain(collection_id: int) -> None:
+def one_question_chain(collection_name: str) -> None:
     user_question, parsed_elements = prompt_question()
 
     results: SearchResults = {}
     if parsed_elements.get("metadata_search"):
-        results["metadata"] = get_metadata(parsed_elements["metadata_search"], collection_id)
+        results["metadata"] = get_metadata(parsed_elements["metadata_search"], collection_name)
 
     if parsed_elements.get("content_search"):
-        content_results, content_scores = content_search(
-            parsed_elements["content_search"], results.get("metadata", [])
-        )
+        content_results = content_search(parsed_elements["content_search"], results.get("metadata", []))
         results["content"] = content_results
 
     if parsed_elements.get("general_knowledge"):
@@ -153,4 +150,4 @@ def one_question_chain(collection_id: int) -> None:
 
 
 if __name__ == "__main__":
-    one_question_chain(1)
+    one_question_chain("all papers")
