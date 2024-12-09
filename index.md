@@ -1,4 +1,4 @@
-# GiantsMind: An Intelligent Research Assistant for Scientific Paper Management
+# GiantsMind: An Intelligent Research Assistant for Scientific Paper Query
 
 As researchers, we've all experienced the frustration of trying to locate specific information in scientific papers we've read weeks or months ago, or summarize new papers to decide if we should read them. Whether it's recalling a neural network architecture, comparison metrics, or experimental details, finding precise information across multiple papers can be time-consuming and challenging. While Large Language Models (LLMs) like GPT-4 and Claude have made it easier to analyze individual papers, they weren't designed to handle libraries of papers with sophisticated filtering and search capabilities. This is where GiantsMind comes in.
 
