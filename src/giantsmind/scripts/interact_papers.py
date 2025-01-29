@@ -100,7 +100,7 @@ def get_metadata(metadata_query: str, collection_name: str) -> List[MetadataResu
     logger.info(f"SQL query: {sql_query}")
 
     raw_results = sql.metadata_query(sql_query)
-    metadata_results = [MetadataResult(**result) for result in raw_results]
+    metadata_results = [MetadataResult(result) for result in raw_results]
     logger.info(f"Metadata results: {metadata_results}")
     return metadata_results
 

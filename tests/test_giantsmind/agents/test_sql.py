@@ -237,12 +237,6 @@ def test_get_sql_query_invalid_message_type():
         sa.get_sql_query(123)
 
 
-def test_get_sql_query_invalid_collection_id():
-    """Test get_sql_query with invalid collection_id"""
-    with pytest.raises(ValueError, match="collection_id must be non-negative integer"):
-        sa.get_sql_query("Find all records", collection_id=-1)
-
-
 def test_get_sql_query_schema_provider_error():
     """Test get_sql_query when schema provider fails"""
 

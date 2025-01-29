@@ -12,7 +12,7 @@ def extract_paper_ids(metadata_results: Optional[List[Dict[str, str]]]) -> List[
     """Extract paper IDs from metadata results."""
     if not metadata_results:
         return []
-    return [result["paper_id"] for result in metadata_results]
+    return [result.paper_id for result in metadata_results]
 
 
 def combine_docs(documents: Sequence[Document], separator_length: int = DEFAULT_SEPARATOR_LENGTH) -> str:
@@ -73,7 +73,7 @@ def format_metadata_results(metadata_results: Optional[List[MetadataResult]]) ->
 
     formatted_results = []
     for result in metadata_results:
-        missing_keys = REQUIRED_METADATA_KEYS - result.keys()
+        missing_keys = REQUIRED_METADATA_KEYS - set(result.keys())
         if missing_keys:
             raise ValueError(f"Metadata result missing required keys: {missing_keys}")
 

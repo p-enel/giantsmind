@@ -63,7 +63,7 @@ def perform_similarity_search(
         results = client.similarity_search(query, filter={"paper_id": {"$in": paper_ids}}, k=n_results)
     else:
         results = client.similarity_search(query, k=n_results)
-    return zip(*results)
+    return tuple(zip(*results))
 
 
 def flash_rerank_docs(docs: List[Document], query: str) -> List[Document]:

@@ -18,23 +18,20 @@ def test_generate_answering_prompt():
 
 
 def test_answer_question():
-    # Mock the ChatAnthropic instance and response
-    mock_instance = MagicMock()
+    mock_prompt = "test prompt"
     mock_response = MagicMock()
-    mock_response.content = "This is a test answer"
-    mock_instance.invoke.return_value = mock_response
+    mock_response.content = "test response"
 
-    with patch("giantsmind.agents.answering.generate_answering_prompt") as mock_generate_prompt, patch(
-        "giantsmind.agents.answering.ChatAnthropic"
-    ) as mock_chat_anthropic_class:
-        mock_chat_anthropic_class.return_value = mock_instance
-        mock_generate_prompt.return_value = "mocked prompt"
+    mock_model = MagicMock()
+    mock_model.invoke.return_value = mock_response
 
-        result = answer_question(user_question="test question", context="test context")
+    mock_prompt_generator = MagicMock(return_value=mock_prompt)
 
-        # Assert the result is correct
-        assert result == "This is a test answer"
+    with patch("giantsmind.agents.answering.ChatAnthropic", return_value=mock_model):
+        result = answer_question(
+            user_question="test question", context="test context", prompt_generator=mock_prompt_generator
+        )
 
-        # Verify the function called the model with correct prompt
-        mock_generate_prompt.assert_called_once_with("test question", "test context")
-        mock_instance.invoke.assert_called_once_with("mocked prompt")
+    mock_prompt_generator.assert_called_once_with("test question", "test context")
+    mock_model.invoke.assert_called_once_with(mock_prompt)
+    assert result == "test response"

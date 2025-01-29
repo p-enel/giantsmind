@@ -1,3 +1,4 @@
+import traceback
 from pathlib import Path
 from typing import Dict, List
 
@@ -69,7 +70,8 @@ def process_documents(pdf_paths: List[Path]) -> tuple[List[Document], List[Metad
         return parsed_docs, metadatas
     except Exception as e:
         logger.error(f"Failed to process documents: {str(e)}")
-        raise
+        logger.error(traceback.format_exc())
+        raise e
 
 
 def process_database_operations(

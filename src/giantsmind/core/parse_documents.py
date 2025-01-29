@@ -4,20 +4,33 @@ import traceback
 from pathlib import Path
 from typing import List, Sequence
 
+import nltk
 from langchain_community.document_loaders import UnstructuredMarkdownLoader
 from langchain_core.documents.base import Document as LangchainDocument
 from llama_parse import LlamaParse
 from llama_parse.base import Document as LlamaDocument
+from nltk.downloader import Downloader
 
 from giantsmind.utils import local, utils
 
 MODELS = {"bge-small": {"model": "BAAI/bge-base-en-v1.5", "vector_size": 768}}
 PARSE_INSTRUCTIONS = """Extract the text from this scientific article and return it in markdown format without delimiters. Do not add any text to the document."""
 
+downloader = Downloader()
+
+
+def ensure_nltk_package(package_name):
+    if not downloader.is_installed(package_name):
+        nltk.download(package_name)
+
+
+ensure_nltk_package("punkt_tab")
+ensure_nltk_package("averaged_perceptron_tagger_eng")
+
 
 def load_markdown(document_path: str) -> List[LangchainDocument]:
     loader = UnstructuredMarkdownLoader(document_path)
-    return loader.load()
+    return loader.load()[0]
 
 
 def parse_document(file_path: str | Path, instruction: str) -> LlamaDocument:
@@ -149,7 +162,7 @@ def _pdfs_path_to_md_path(pdf_paths: List[str]) -> List[str]:
 
 
 def load_parsed_documents(parsed_files: List[str]) -> List[LangchainDocument]:
-    return [load_markdown(doc)[0] for doc in parsed_files]
+    return [load_markdown(doc) for doc in parsed_files]
 
 
 def load_parsed_documents_with_pdf_path(pdf_paths: List[str]) -> List[LangchainDocument]:
@@ -177,8 +190,6 @@ def parse_pdfs(
         pdf_paths, check_markdowns_exist
     )
     parsed_docs = asyncio.run(aparse_files(pdf_paths_to_process, PARSE_INSTRUCTIONS))
-    # parse_files(pdf_paths_to_process, PARSE_INSTRUCTIONS)
     write_parsed_docs(pdf_paths_to_process, parsed_docs)
     langchain_docs = load_parsed_documents_with_pdf_path(pdf_paths)
-    # langchain_docs = utils.reorder_merge_lists(parsed_docs, parsed_docs_existing, index_to_process, index_exist)
     return langchain_docs

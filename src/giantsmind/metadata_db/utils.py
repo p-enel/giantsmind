@@ -1,7 +1,7 @@
 from datetime import date
 from typing import List, Tuple
 
-import textdistance
+# import textdistance
 from sqlalchemy import and_
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
@@ -16,9 +16,9 @@ def _get_unique_values(rows, column):
     return list(set([getattr(row, column) for row in rows]))
 
 
-def _get_distance(values: List[str], search_term: str) -> Tuple[List[str], List[float]]:
-    distances = [textdistance.damerau_levenshtein.distance(search_term, val) for val in values]
-    return list(distances)
+# def _get_distance(values: List[str], search_term: str) -> Tuple[List[str], List[float]]:
+#     distances = [textdistance.damerau_levenshtein.distance(search_term, val) for val in values]
+#     return list(distances)
 
 
 def _sort(values: List[str], distances: List[float]) -> Tuple[List[str], List[float]]:
@@ -26,33 +26,33 @@ def _sort(values: List[str], distances: List[float]) -> Tuple[List[str], List[fl
     return list(values), list(distances)
 
 
-def search_string_in_column(
-    table, column_name: str, search_term: str, engine: Engine = engine
-) -> Tuple[List[str], List[float]]:
-    """Search for a string in a column of a table.
+# def search_string_in_column(
+#     table, column_name: str, search_term: str, engine: Engine = engine
+# ) -> Tuple[List[str], List[float]]:
+#     """Search for a string in a column of a table.
 
-    Returns the values of the column that match the search term in the
-    column of the table.
+#     Returns the values of the column that match the search term in the
+#     column of the table.
 
-    """
-    field = getattr(Paper, column_name)
-    with Session(engine) as session:
-        # Try to find an exact match
-        exact_match = session.query(table).filter(field == search_term).one_or_none()
-        if exact_match:
-            return [exact_match.__dict__[column_name]], [0.0]
+#     """
+#     field = getattr(Paper, column_name)
+#     with Session(engine) as session:
+#         # Try to find an exact match
+#         exact_match = session.query(table).filter(field == search_term).one_or_none()
+#         if exact_match:
+#             return [exact_match.__dict__[column_name]], [0.0]
 
-        # Try to find a match using the LIKE operator
-        like_matches = session.query(table).filter(field.like(f"%{search_term}%")).all()
-        if like_matches:
-            unique_vals = _get_unique_values(like_matches, column_name)
-            distances = _get_distance(unique_vals, search_term)
-            unique_vals, distances = _sort(unique_vals, distances)
-            return unique_vals, distances
+#         # Try to find a match using the LIKE operator
+#         like_matches = session.query(table).filter(field.like(f"%{search_term}%")).all()
+#         if like_matches:
+#             unique_vals = _get_unique_values(like_matches, column_name)
+#             distances = _get_distance(unique_vals, search_term)
+#             unique_vals, distances = _sort(unique_vals, distances)
+#             return unique_vals, distances
 
-        # Try to find a match using fuzzy matching
-        results, distances = _column_fuzzy_match(engine, column_name, search_term)
-        return results, distances
+#         # Try to find a match using fuzzy matching
+#         results, distances = _column_fuzzy_match(engine, column_name, search_term)
+#         return results, distances
 
 
 def _find_papers(

@@ -7,15 +7,19 @@ authors = [{name = "Pierre Enel", email = "pierre.enel@gmail.com"}]
 dependencies = [
     "langchain",
     "langchain_community",
+    "langchain_anthropic",
     "langchain_chroma",
     "llama_parse",
-    "chromadb",
     "sqlalchemy",
     "pymupdf",
     "PyPDF2",
     "requests",
     "python-dotenv>=0.19.0",
     "platformdirs",
+    "unstructured",
+    "markdown",
+    # "fastembed",
+    # "flashrank",
 ]
 
 classifiers = [
