@@ -71,6 +71,11 @@ def format_metadata_results(metadata_results: Optional[List[MetadataResult]]) ->
     if not metadata_results:
         return "No metadata results found."
 
+    if not isinstance(metadata_results, list) or not all(
+        isinstance(result, MetadataResult) for result in metadata_results
+    ):
+        raise ValueError("metadata_results must be a list of MetadataResult objects")
+
     formatted_results = []
     for result in metadata_results:
         missing_keys = REQUIRED_METADATA_KEYS - set(result.keys())

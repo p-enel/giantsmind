@@ -4,6 +4,7 @@ import os
 import sys
 from typing import List, Optional
 
+from giantsmind.metadata_db import config as db_cfg_module
 from giantsmind.scripts.interact_papers import one_question_chain
 from giantsmind.scripts.parse_papers import parse_papers
 from giantsmind.utils.logging import logger
@@ -32,7 +33,7 @@ def main(args: Optional[List[str]] = None) -> int:
         if parsed_args.parse is not None:
             return parse_papers(parsed_args.parse)
         else:
-            one_question_chain(1)
+            one_question_chain(db_cfg_module.DEFAULT_COLLECTION)
             return 0
 
     except Exception as e:

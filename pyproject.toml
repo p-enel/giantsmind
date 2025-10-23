@@ -1,6 +1,6 @@
 [project]
 name = "giantsmind"
-version = "0.1.0"
+version = "0.1.1"
 description = "A Python package that provides tools for interacting with scientific articles PDFs."
 authors = [{name = "Pierre Enel", email = "pierre.enel@gmail.com"}]
 
@@ -18,15 +18,16 @@ dependencies = [
     "platformdirs",
     "unstructured",
     "markdown",
-    # "fastembed",
-    # "flashrank",
+    "python-levenshtein",
+    "fastembed",
+    "flashrank",
 ]
 
 classifiers = [
    "Development Status :: 2 - Pre-Alpha",
    "Intended Audience :: Science/Research",
    "License :: OSI Approved :: BSD License",
-   'Operating System :: Unix',
+   "Operating System :: Unix",
    "Programming Language :: Python :: 3.12",
    "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
@@ -41,6 +42,13 @@ profile = "black"
 addopts = "-vv"
 testpaths = ["tests"]
 
+[dependency-groups]
+dev = [
+    "ipdb>=0.13.13",
+    "ipython>=9.6.0",
+    "pytest>=8.4.2",
+]
+
 [project.scripts]
 giantsmind = "giantsmind.cli_entry:main"
 
@@ -51,4 +59,5 @@ dev = [
     "isort",
     "pytest",
     "pytest-mock",
+    "ipdb",
 ]

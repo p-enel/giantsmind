@@ -5,6 +5,7 @@ from langchain_core.documents.base import Document
 from giantsmind.agents import answering, question_parsing, sql
 from giantsmind.core import process_results as proc_res
 from giantsmind.core.models import MetadataResult, ParsedElements, SearchResults
+from giantsmind.metadata_db import config as db_cfg_module
 from giantsmind.utils.logging import logger
 from giantsmind.vector_db import search
 
@@ -100,7 +101,7 @@ def get_metadata(metadata_query: str, collection_name: str) -> List[MetadataResu
     logger.info(f"SQL query: {sql_query}")
 
     raw_results = sql.metadata_query(sql_query)
-    metadata_results = [MetadataResult(result) for result in raw_results]
+    metadata_results = [MetadataResult(**result) for result in raw_results]
     logger.info(f"Metadata results: {metadata_results}")
     return metadata_results
 
@@ -128,7 +129,7 @@ def print_results(final_answer: str) -> None:
     print(f"Answer: {final_answer}")
 
 
-def one_question_chain(collection_name: str) -> None:
+def one_question_chain(collection_name: str = db_cfg_module.DEFAULT_COLLECTION) -> None:
     user_question, parsed_elements = prompt_question()
 
     results: SearchResults = {}

@@ -8,7 +8,6 @@ import nltk
 from langchain_community.document_loaders import UnstructuredMarkdownLoader
 from langchain_core.documents.base import Document as LangchainDocument
 from llama_parse import LlamaParse
-from llama_parse.base import Document as LlamaDocument
 from nltk.downloader import Downloader
 
 from giantsmind.utils import local, utils
@@ -33,7 +32,7 @@ def load_markdown(document_path: str) -> List[LangchainDocument]:
     return loader.load()[0]
 
 
-def parse_document(file_path: str | Path, instruction: str) -> LlamaDocument:
+def parse_document(file_path: str | Path, instruction: str) -> list:
     parser = LlamaParse(
         api_key=os.getenv("LLAMA_API_KEY"),
         result_type="markdown",
@@ -43,7 +42,7 @@ def parse_document(file_path: str | Path, instruction: str) -> LlamaDocument:
     return parser.load_data(file_path)
 
 
-def parse_files(files: Sequence[str], instruction: str) -> list[LlamaDocument]:
+def parse_files(files: Sequence[str], instruction: str) -> list:
     if len(files) == 0:
         print("No files to parse.")
         return []
@@ -64,7 +63,7 @@ def parse_files(files: Sequence[str], instruction: str) -> list[LlamaDocument]:
     return parsed_documents
 
 
-def _initialize_parser(instruction: str) -> LlamaDocument:
+def _initialize_parser(instruction: str) -> LlamaParse:
     return LlamaParse(
         api_key=os.getenv("LLAMA_API_KEY"),
         result_type="markdown",
@@ -74,12 +73,12 @@ def _initialize_parser(instruction: str) -> LlamaDocument:
     )
 
 
-async def _attempt_parse(parser: LlamaParse, file_path: str) -> LlamaDocument:
+async def _attempt_parse(parser: LlamaParse, file_path: str) -> list:
     docs = await parser.aload_data(file_path)
     return docs
 
 
-async def aparse_document(pdf_path: str, instruction: str, retries: int = 2) -> LlamaDocument:
+async def aparse_document(pdf_path: str, instruction: str, retries: int = 2) -> list:
     """Asynchronously parse a single document."""
     parser = _initialize_parser(instruction)
     for attempt in range(1, retries + 2):
@@ -106,7 +105,7 @@ def _check_exist_load_parsed_doc(pdf_path: str, verbose: bool = False) -> Langch
     return None
 
 
-async def aparse_files(file_paths: List[str], instruction: str) -> List[LlamaDocument | None]:
+async def aparse_files(file_paths: List[str], instruction: str) -> List[list | None]:
     if len(file_paths) == 0:
         print("No files to parse.")
         return []
@@ -114,7 +113,7 @@ async def aparse_files(file_paths: List[str], instruction: str) -> List[LlamaDoc
     parsing_crs = [aparse_document(file_path, instruction) for file_path in file_paths]
     parsing_results = await asyncio.gather(*parsing_crs, return_exceptions=True)
 
-    processed_results: List[LlamaDocument | None] = []
+    processed_results: List[list | None] = []
     for i, result in enumerate(parsing_results):
         if isinstance(result, Exception):
             print(f"Error parsing file {file_paths[i]}:\n{type(result)} {result}")
@@ -132,7 +131,7 @@ def create_output_folder() -> str:
     return str(output_folder)
 
 
-def write_single_parsed_file(parsing_result: LlamaDocument, output_folder: str, file_path: str) -> str:
+def write_single_parsed_file(parsing_result: list, output_folder: str, file_path: str) -> str:
     output_path = Path(output_folder) / Path(file_path).with_suffix(".md").name
     for page_doc in parsing_result:
         with output_path.open("a") as f:
@@ -140,7 +139,7 @@ def write_single_parsed_file(parsing_result: LlamaDocument, output_folder: str, 
     return str(output_path)
 
 
-def write_parsed_docs(file_paths: List[str], parsing_results: List[LlamaDocument | None]) -> List[str]:
+def write_parsed_docs(file_paths: List[str], parsing_results: List[list | None]) -> List[str]:
     output_folder = create_output_folder()
     parsed_file_paths: List[str | None] = []
 

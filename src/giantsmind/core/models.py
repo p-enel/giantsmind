@@ -1,4 +1,4 @@
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 from typing import List, Mapping, Optional, Sequence, TypedDict
 
 from langchain_core.documents.base import Document
@@ -6,15 +6,12 @@ from langchain_core.documents.base import Document
 
 @dataclass
 class MetadataResult:
-    title: Optional[str] = None
-    authors: Optional[str] = None
-    publication_date: Optional[str] = None
-    journal: Optional[str] = None
-    paper_id: Optional[str] = None
-
-    def __init__(self, mapping: Mapping):
-        for field in fields(self):
-            setattr(self, field.name, mapping.get(field.name))
+    title: Optional[str] = field(default=None)
+    authors: Optional[str] = field(default=None)
+    publication_date: Optional[str] = field(default=None)
+    journal: Optional[str] = field(default=None)
+    paper_id: Optional[str] = field(default=None)
+    url: Optional[str] = field(default=None)
 
     def keys(self):
         return [field.name for field in fields(self) if getattr(self, field.name) is not None]

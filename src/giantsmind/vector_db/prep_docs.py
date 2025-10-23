@@ -1,7 +1,7 @@
 from typing import List, Sequence
 
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_core.documents.base import Document
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
 def chunk_document(document: Document, chunk_size: int = 4096, chunk_overlap: int = 256) -> List[Document]:

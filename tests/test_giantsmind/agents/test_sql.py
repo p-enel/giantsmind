@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import PropertyMock, mock_open, patch
 
 import pytest
-from langchain.schema import SystemMessage
+from langchain_core.messages import SystemMessage
 
 from giantsmind.agents import sql as sa
 from giantsmind.metadata_db.db_connection import DatabaseManager

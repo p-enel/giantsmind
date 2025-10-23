@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from sqlite3 import Connection
-from typing import Callable, List
+from typing import List
 
 from sqlalchemy import event
 

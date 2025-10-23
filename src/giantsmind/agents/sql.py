@@ -159,7 +159,7 @@ def get_sql_query(
         message_creator: Function to create system message, defaults to _sql_sys_msg
         query_generator: Function to generate SQL query, defaults to LLM model invoke
         logger: Logger instance, defaults to module logger
-        collection_id: Target collection ID, defaults to 1
+        collection_name: Name of the collection to query, defaults to DEFAULT_COLLECTION
 
     Returns:
         Generated SQL query string
@@ -172,7 +172,7 @@ def get_sql_query(
         raise ValueError("user_message must be non-empty string")
 
     if not isinstance(collection_name, str):
-        raise ValueError("collection_id must be non-negative integer")
+        raise ValueError(f"collection_name must be a string, got {collection_name}")
 
     collection_id = col_ops.get_collection_id(collection_name)
     try:

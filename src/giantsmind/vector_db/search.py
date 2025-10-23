@@ -1,10 +1,10 @@
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-import langchain.vectorstores
 from langchain_community.document_compressors import FlashrankRerank
 from langchain_community.embeddings.fastembed import FastEmbedEmbeddings
 from langchain_core.documents.base import Document
+from langchain_core.vectorstores import VectorStore
 
 from giantsmind.utils.local import get_local_data_path
 from giantsmind.vector_db.chroma_client import ChromadbClient
@@ -28,14 +28,12 @@ def get_metadata_from_payload(payload: Dict[str | dict, str]) -> Dict[str, str]:
     return metadata
 
 
-def search_articles_with_similarity(
-    vectorstore: langchain.vectorstores, query: str, **search_kwargs
-) -> List[Document]:
+def search_articles_with_similarity(vectorstore: VectorStore, query: str, **search_kwargs) -> List[Document]:
     documents = retrieve_documents(vectorstore, query, **search_kwargs)
     return documents
 
 
-def retrieve_documents(vectorstore: langchain.vectorstores, query: str, **search_kwargs) -> List[Document]:
+def retrieve_documents(vectorstore: VectorStore, query: str, **search_kwargs) -> List[Document]:
     retriever = vectorstore.as_retriever(search_kwargs=search_kwargs)
     return retriever.invoke(query)
 
@@ -67,7 +65,7 @@ def perform_similarity_search(
 
 
 def flash_rerank_docs(docs: List[Document], query: str) -> List[Document]:
-    compressor = FlashrankRerank(model="ms-marco-MiniLM-L-12-v2", score_threshold=0.5, top_n=10)
+    compressor = FlashrankRerank(model="ms-marco-MiniLM-L-12-v2", top_n=10)
     docs_reranked = compressor.compress_documents(docs, query)
 
     return docs_reranked
